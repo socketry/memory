@@ -1,7 +1,42 @@
 # frozen_string_literal: true
 
 require 'objspace'
+require 'msgpack'
+
 module MemoryProfiler
+  class Wrapper < MessagePack::Factory
+    def initialize(cache)
+      super()
+      
+      @cache = cache
+      
+      self.register_type(0x01, Allocation,
+        packer: ->(instance){self.pack(instance.pack)},
+        unpacker: ->(data){Allocation.unpack(@cache, self.unpack(data))},
+      )
+      
+      self.register_type(0x02, Symbol)
+    end
+  end
+  
+  Allocation = Struct.new(:cache, :class_name, :file, :line, :memsize, :string_value, :retained) do
+    def location
+      cache.lookup_location(file, line)
+    end
+    
+    def gem
+      cache.guess_gem(file)
+    end
+    
+    def pack
+      [class_name, file, line, memsize, string_value, retained]
+    end
+    
+    def self.unpack(cache, fields)
+      self.new(cache, *fields)
+    end
+  end
+  
   # Reporter is the top level API used for generating memory reports.
   #
   # @example Measure object allocation in a block
@@ -13,13 +48,17 @@ module MemoryProfiler
       attr_accessor :current_reporter
     end
 
-    attr_reader :top, :trace, :generation, :report_results
+    attr_reader :top, :trace, :allocated
 
     def initialize(opts = {})
       @top          = opts[:top] || 50
       @trace        = opts[:trace] && Array(opts[:trace])
       @ignore_files = opts[:ignore_files] && Regexp.new(opts[:ignore_files])
       @allow_files  = opts[:allow_files] && /#{Array(opts[:allow_files]).join('|')}/
+      
+      @cache = Cache.new
+      @wrapper = Wrapper.new(@cache)
+      @allocated = []
     end
 
     # Helper for generating new reporter and running against block.
@@ -34,10 +73,8 @@ module MemoryProfiler
     end
 
     def start
-      GC.start
-      GC.start
-      GC.start
       GC.disable
+      GC.start
 
       @generation = GC.count
       ObjectSpace.trace_object_allocations_start
@@ -45,38 +82,61 @@ module MemoryProfiler
 
     def stop
       ObjectSpace.trace_object_allocations_stop
-      allocated = object_list(generation)
-      retained = StatHash.new.compare_by_identity
+      allocated = track_allocations(@generation)
+      $stderr.puts
+      $stderr.puts "(Got allocated list: #{allocated.size}, Allocated object count: #{ObjectSpace.count_objects.inspect})"
+      $stderr.puts
 
       GC.enable
-      GC.start
-      GC.start
-      GC.start
+      3.times{GC.start}
 
-      # Caution: Do not allocate any new Objects between the call to GC.start and the completion of the retained
-      #          lookups. It is likely that a new Object would reuse an object_id from a GC'd object.
+      $stderr.puts "(Retained object count: #{ObjectSpace.count_objects.inspect})"
+
+      # Caution: Do not allocate any new Objects between the call to GC.start and the completion of the retained lookups. It is likely that a new Object would reuse an object_id from a GC'd object.
 
       ObjectSpace.each_object do |obj|
-        next unless ObjectSpace.allocation_generation(obj) == generation
-        found = allocated[obj.__id__]
-        retained[obj.__id__] = found if found
+        next unless ObjectSpace.allocation_generation(obj) == @generation
+        
+        if found = allocated[obj.__id__]
+          found.retained = true
+        end
       end
-      ObjectSpace.trace_object_allocations_clear
 
-      @report_results = Results.new
-      @report_results.register_results(allocated, retained, top)
+      ObjectSpace.trace_object_allocations_clear
+    end
+
+    def dump(io = nil)
+      $stderr.puts "(Dumping allocations: #{@allocated.size})"
+      
+      if io
+        packer = @wrapper.packer(io)
+        packer.pack(@allocated)
+        packer.flush
+      else
+        @wrapper.dump(@allocated)
+      end
+    end
+    
+    def load(data)
+      allocations = @wrapper.load(data)
+      
+      $stderr.puts "(Loading allocations: #{allocations.size})"
+      
+      @allocated.concat(allocations)
+    end
+
+    def results
+      results = Results.new
+      results.register_results(@allocated, @top)
     end
 
     # Collects object allocation and memory of ruby code inside of passed block.
     def run(&block)
       start
+      
       begin
-        yield
-      rescue Exception
-        ObjectSpace.trace_object_allocations_stop
-        GC.enable
-        raise
-      else
+        return yield
+      ensure
         stop
       end
     end
@@ -85,12 +145,11 @@ module MemoryProfiler
 
     # Iterates through objects in memory of a given generation.
     # Stores results along with meta data of objects collected.
-    def object_list(generation)
-
+    def track_allocations(generation)
       rvalue_size = GC::INTERNAL_CONSTANTS[:RVALUE_SIZE]
-      helper = Helpers.new
+      index = 0
 
-      result = StatHash.new.compare_by_identity
+      allocated = Hash.new.compare_by_identity
 
       ObjectSpace.each_object do |obj|
         next unless ObjectSpace.allocation_generation(obj) == generation
@@ -99,29 +158,31 @@ module MemoryProfiler
         next if @ignore_files && @ignore_files =~ file
         next if @allow_files && !(@allow_files =~ file)
 
-        klass = helper.object_class(obj)
+        klass = obj.class rescue nil
+        unless Class === klass
+          # attempt to determine the true Class when .class returns something other than a Class
+          klass = Kernel.instance_method(:class).bind(obj).call
+        end
         next if @trace && !trace.include?(klass)
 
-        begin
-          line       = ObjectSpace.allocation_sourceline(obj)
-          location   = helper.lookup_location(file, line)
-          class_name = helper.lookup_class_name(klass)
-          gem        = helper.guess_gem(file)
+        line = ObjectSpace.allocation_sourceline(obj)
 
-          # we do memsize first to avoid freezing as a side effect and shifting
-          # storage to the new frozen string, this happens on @hash[s] in lookup_string
-          memsize = ObjectSpace.memsize_of(obj)
-          string = klass == String ? helper.lookup_string(obj) : nil
+        # we do memsize first to avoid freezing as a side effect and shifting
+        # storage to the new frozen string, this happens on @hash[s] in lookup_string
+        memsize = ObjectSpace.memsize_of(obj)
+        class_name = @cache.lookup_class_name(klass)
+        string_value = (klass == String) ? @cache.lookup_string(obj) : nil
 
-          # compensate for API bug
-          memsize = rvalue_size if memsize > 100_000_000_000
-          result[obj.__id__] = MemoryProfiler::Stat.new(class_name, gem, file, location, memsize, string)
-        rescue
-          # give up if any any error occurs inspecting the object
-        end
+        # compensate for API bug
+        memsize = rvalue_size if memsize > 100_000_000_000
+
+        allocation = Allocation.new(@cache, class_name, file, line, memsize, string_value, false)
+
+        @allocated << allocation
+        allocated[obj.__id__] = allocation
       end
 
-      result
+      return allocated
     end
   end
 end

@@ -38,16 +38,42 @@ module MemoryProfiler
     attr_accessor :total_retained, :total_allocated
     attr_accessor :total_retained_memsize, :total_allocated_memsize
 
-    def register_results(allocated, retained, top)
+    # Fast approach for determining the top_n entries in a Hash of Stat objects.
+    # Returns results for both memory (memsize summed) and objects allocated (count) as a tuple.
+    def top_n(values, max, metric_method)
+      stat_totals =
+        values
+          .group_by(&metric_method)
+          .map do |metric, stats|
+            [metric, stats.reduce(0) { |sum, stat| sum + stat.memsize }, stats.size]
+          end
+
+      stats_by_memsize =
+        stat_totals
+          .sort_by! { |metric, memsize, _count| [-memsize, metric] }
+          .take(max)
+          .map! { |metric, memsize, _count| { data: metric, count: memsize } }
+
+      stats_by_count =
+        stat_totals
+          .sort_by! { |metric, _memsize, count| [-count, metric] }
+          .take(max)
+          .map! { |metric, _memsize, count| { data: metric, count: count } }
+
+      [stats_by_memsize, stats_by_count]
+    end
+
+    def register_results(allocated, top)
+      retained = allocated.select{|allocation| allocation.retained}
 
       @@lookups.each do |name, stat_attribute|
 
-        memsize_results, count_results = allocated.top_n(top, stat_attribute)
+        memsize_results, count_results = top_n(allocated, top, stat_attribute)
 
         self.send("allocated_memory_by_#{name}=", memsize_results)
         self.send("allocated_objects_by_#{name}=", count_results)
 
-        memsize_results, count_results = retained.top_n(top, stat_attribute)
+        memsize_results, count_results = top_n(retained, top, stat_attribute)
 
         self.send("retained_memory_by_#{name}=", memsize_results)
         self.send("retained_objects_by_#{name}=", count_results)
@@ -57,9 +83,9 @@ module MemoryProfiler
       self.strings_retained = string_report(retained, top)
 
       self.total_allocated = allocated.size
-      self.total_allocated_memsize = allocated.values.map!(&:memsize).inject(0, :+)
+      self.total_allocated_memsize = allocated.sum(&:memsize)
       self.total_retained = retained.size
-      self.total_retained_memsize = retained.values.map!(&:memsize).inject(0, :+)
+      self.total_retained_memsize = retained.sum(&:memsize)
 
       self
     end
@@ -72,8 +98,8 @@ module MemoryProfiler
       "%.2f #{UNIT_PREFIXES[scale]}" % (bytes / 10.0**scale)
     end
 
-    def string_report(data, top)
-      grouped_strings = data.values
+    def string_report(values, top)
+      grouped_strings = values
         .keep_if  { |stat| stat.string_value }
         .group_by { |stat| stat.string_value.object_id }
         .values

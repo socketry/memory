@@ -18,4 +18,6 @@ Gem::Specification.new do |spec|
   spec.files         = Dir["README.md", "CHANGELOG.md", "LICENSE.txt", "lib/**/*"]
 
   spec.required_ruby_version = ">= 2.3.0"
+  
+  spec.add_dependency "msgpack"
 end
