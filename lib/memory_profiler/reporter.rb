@@ -4,6 +4,52 @@ require 'objspace'
 require 'msgpack'
 
 module MemoryProfiler
+  class Deque
+    def initialize
+      @segments = []
+      @last = nil
+    end
+    
+    def freeze
+      return self if frozen?
+
+      @segments.each(&:freeze)
+      @last = nil
+
+      super
+    end
+    
+    include Enumerable
+    
+    def concat(segment)
+      @segments << segment
+      @last = nil
+      
+      return self
+    end
+    
+    def << item
+      unless @last
+        @last = []
+        @segments << @last
+      end
+      
+      @last << item
+      
+      return self
+    end
+    
+    def each(&block)
+      @segments.each do |segment|
+        segment.each(&block)
+      end
+    end
+    
+    def size
+      @segments.sum(&:size)
+    end
+  end
+  
   class Wrapper < MessagePack::Factory
     def initialize(cache)
       super()
@@ -58,7 +104,7 @@ module MemoryProfiler
       
       @cache = Cache.new
       @wrapper = Wrapper.new(@cache)
-      @allocated = []
+      @allocated = Deque.new
     end
 
     # Helper for generating new reporter and running against block.
