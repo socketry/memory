@@ -5,6 +5,8 @@ source 'https://rubygems.org'
 # Specify your gem's dependencies in memory_profiler.gemspec
 gemspec
 
+gem "console", path: "../../socketry/console"
+
 group :development, :test do
   gem 'rake', require: false
   gem 'minitest', require: false

@@ -65,7 +65,7 @@ module MemoryProfiler
     end
   end
   
-  Allocation = Struct.new(:cache, :class_name, :file, :line, :memsize, :string_value, :retained) do
+  Allocation = Struct.new(:cache, :class_name, :file, :line, :memsize, :value, :retained) do
     def location
       cache.lookup_location(file, line)
     end
@@ -75,7 +75,7 @@ module MemoryProfiler
     end
     
     def pack
-      [class_name, file, line, memsize, string_value, retained]
+      [class_name, file, line, memsize, value, retained]
     end
     
     def self.unpack(cache, fields)
@@ -89,33 +89,29 @@ module MemoryProfiler
   #   report = Reporter.report(top: 50) do
   #     5.times { "foo" }
   #   end
-  class Reporter
+  class Sampler
     class << self
       attr_accessor :current_reporter
     end
 
-    attr_reader :top, :trace, :allocated
-
-    def initialize(opts = {})
-      @top          = opts[:top] || 50
-      @trace        = opts[:trace] && Array(opts[:trace])
-      @ignore_files = opts[:ignore_files] && Regexp.new(opts[:ignore_files])
-      @allow_files  = opts[:allow_files] && /#{Array(opts[:allow_files]).join('|')}/
+    attr :trace, :allocated
+    
+    def initialize(trace: nil, ignore_files: nil, allow_files: nil)
+      if trace
+        @trace = Array(trace)
+      end
+      
+      if ignore_files
+        @ignore_files = Regexp.new(ignore_files)
+      end
+      
+      if allow_files
+        @allow_files = /#{Array(allow_files).join('|')}/
+      end
       
       @cache = Cache.new
       @wrapper = Wrapper.new(@cache)
-      @allocated = Deque.new
-    end
-
-    # Helper for generating new reporter and running against block.
-    # @param [Hash] opts the options to create a report with
-    # @option opts :top max number of entries to output
-    # @option opts :trace a class or an array of classes you explicitly want to trace
-    # @option opts :ignore_files a regular expression used to exclude certain files from tracing
-    # @option opts :allow_files a string or array of strings to selectively include in tracing
-    # @return [MemoryProfiler::Results]
-    def self.report(opts = {}, &block)
-      self.new(opts).run(&block)
+      @allocated = Array.new
     end
 
     def start
@@ -171,9 +167,12 @@ module MemoryProfiler
       @allocated.concat(allocations)
     end
 
-    def results
-      results = Results.new
-      results.register_results(@allocated, @top)
+    def report
+      report = Report.general
+
+      report.concat(@allocated)
+
+      return report
     end
 
     # Collects object allocation and memory of ruby code inside of passed block.
@@ -217,12 +216,12 @@ module MemoryProfiler
         # storage to the new frozen string, this happens on @hash[s] in lookup_string
         memsize = ObjectSpace.memsize_of(obj)
         class_name = @cache.lookup_class_name(klass)
-        string_value = (klass == String) ? @cache.lookup_string(obj) : nil
+        value = (klass == String) ? @cache.lookup_string(obj) : nil
 
         # compensate for API bug
         memsize = rvalue_size if memsize > 100_000_000_000
 
-        allocation = Allocation.new(@cache, class_name, file, line, memsize, string_value, false)
+        allocation = Allocation.new(@cache, class_name, file, line, memsize, value, false)
 
         @allocated << allocation
         allocated[obj.__id__] = allocation

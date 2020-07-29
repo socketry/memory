@@ -4,8 +4,8 @@ require "memory_profiler/version"
 require "memory_profiler/cache"
 require "memory_profiler/polychrome"
 require "memory_profiler/monochrome"
-require "memory_profiler/results"
-require "memory_profiler/reporter"
+require "memory_profiler/report"
+require "memory_profiler/sampler"
 
 module MemoryProfiler
   def self.report(opts = {}, &block)

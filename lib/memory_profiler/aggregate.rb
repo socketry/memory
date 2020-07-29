@@ -1,36 +1,110 @@
 # frozen_string_literal: true
 
 module MemoryProfiler
+	UNITS = {
+		0 => 'B',
+		3 => 'KiB',
+		6 => 'MiB',
+		9 => 'GiB',
+		12 => 'TiB',
+		15 => 'PiB',
+		18 => 'EiB',
+		21 => 'ZiB',
+		24 => 'YiB'
+	}.freeze
+	
+	def self.formatted_bytes(bytes)
+		return "0 B" if bytes.zero?
+		
+		scale = Math.log2(bytes).div(10) * 3
+		scale = 24 if scale > 24
+		"%.2f #{UNITS[scale]}" % (bytes / 10.0**scale)
+	end
+	
 	class Aggregate
-		Total = Struct.new(:memory, :count)
-		
-		def initialize(&block)
-			@metric = block
+		Total = Struct.new(:memory, :count) do
+			def initialize
+				super(0, 0)
+			end
 			
-			@totals = Hash.new{|h,k| h[k] = Total.new}
-		end
-		
-		def concat(values)
-			values.group_by(&@metric).each do |metric, allocations|
-				total = @totals[metric]
-				total.memory += allocations.sum(&:memsize)
-				total.count += allocations.size
+			def << allocation
+				self.memory += allocation.size
+				self.count += 1
+			end
+			
+			def formatted_memory
+				self.memory
+			end
+			
+			def to_s
+				"(#{MemoryProfiler.formatted_bytes memory} in #{count} allocations)"
 			end
 		end
 		
-		def by_memory
-			@totals.sort_by{|metric, total| [-total.memory, metric]}
+		def initialize(title, &block)
+			@title = title
+			@metric = block
+			
+			@total = Total.new
+			@totals = Hash.new{|h,k| h[k] = Total.new}
 		end
 		
-		def by_count
-			@totals.sort_by{|metric, total| [-total.count, metric]}
+		attr :total
+		
+		def << allocation
+			metric = @metric.call(allocation)
+			total = @totals[metric]
+			
+			memory = allocation.memsize
+			
+			total.memory += allocation.memsize
+			total.count += 1
+			
+			@total.memory += allocation.memsize
+			@total.count += 1
+		end
+		
+		def totals_by(key)
+			@totals.sort_by{|metric, total| [total[key], metric]}
+		end
+		
+		def print(io = $stderr, limit: 10, title: @title, level: 2)
+			io.puts "#{'#' * level} #{title} #{@total}", nil
+			
+			totals_by(:memory).last(limit).reverse_each do |metric, total|
+				io.puts "- #{total}\t#{metric}"
+			end
+			
+			io.puts nil
 		end
 	end
-
-	class Report
-		def initialize(aggregates)
-			@aggregates = aggregates
+	
+	class ValueAggregate
+		def initialize(title, &block)
+			@title = title
+			@metric = block
+			
+			@aggregates = Hash.new{|h,k| h[k] = Aggregate.new(k.inspect, &@metric)}
 		end
 		
-		def 
+		def << allocation
+			if value = allocation.value
+				aggregate = @aggregates[value]
+				
+				aggregate << allocation
+			end
+		end
+		
+		def aggregates_by(key)
+			@aggregates.sort_by{|value, aggregate| [aggregate.total[key], value]}
+		end
+		
+		def print(io = $stderr, limit: 10, level: 2)
+			io.puts "#{'#' * level} #{@title}", nil
+			
+			aggregates_by(:count).last(limit).reverse_each do |value, aggregate|
+				aggregate.print(io, level: level+1)
+			end
+		end
+	end
 end
