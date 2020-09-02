@@ -1,9 +1,8 @@
-[![Build Status](https://travis-ci.org/SamSaffron/memory_profiler.svg?branch=master)](https://travis-ci.org/SamSaffron/memory_profiler)
-[![Gem Version](https://badge.fury.io/rb/memory_profiler.svg)](https://rubygems.org/gems/memory_profiler)
-
-# MemoryProfiler
+# Memory
 
 A memory profiler for Ruby
+
+[![Development Status](https://github.com/socketry/memory/workflows/Development/badge.svg)](https://github.com/socketry/memory/actions?workflow=Development)
 
 ## Requirements
 
@@ -25,9 +24,9 @@ Or install it yourself as:
 
 ## Usage
 
-```ruby
+``` ruby
 require 'memory_profiler'
-report = MemoryProfiler.report do
+report = Memory.report do
   # run your code here
 end
 
@@ -36,14 +35,14 @@ report.pretty_print
 
 Or, you can use the `.start`/`.stop` API as well:
 
-```ruby
+``` ruby
 require 'memory_profiler'
 
-MemoryProfiler.start
+Memory.start
 
 # run your code
 
-report = MemoryProfiler.stop
+report = Memory.stop
 report.pretty_print
 ```
 
@@ -56,77 +55,72 @@ be the only time you can retrieve the report using this API.
 
 The `report` method can take a few options:
 
-* `top`: maximum number of entries to display in a report (default is 50)
-* `allow_files`: include only certain files from tracing - can be given as a String, Regexp, or array of Strings
-* `ignore_files`: exclude certain files from tracing - can be given as a String or Regexp
-* `trace`: an array of classes for which you explicitly want to trace object allocations
+  - `top`: maximum number of entries to display in a report (default is 50)
+  - `allow_files`: include only certain files from tracing - can be given as a String, Regexp, or array of Strings
+  - `ignore_files`: exclude certain files from tracing - can be given as a String or Regexp
+  - `trace`: an array of classes for which you explicitly want to trace object allocations
 
 Check out `Reporter#new` for more details.
 
-```
-pry> require 'memory_profiler'
-pry> MemoryProfiler.report(allow_files: 'rubygems'){ require 'mime-types' }.pretty_print
-Total allocated 82375
-Total retained 22618
-
-allocated memory by gem
------------------------------------
-rubygems x 305879
-
-allocated memory by file
------------------------------------
-/home/sam/.rbenv/versions/2.1.0-github/lib/ruby/2.1.0/rubygems/core_ext/kernel_require.rb x 285433
-/home/sam/.rbenv/versions/2.1.0-github/lib/ruby/2.1.0/rubygems/basic_specification.rb x 18597
-/home/sam/.rbenv/versions/2.1.0-github/lib/ruby/2.1.0/rubygems.rb x 2218
-/home/sam/.rbenv/versions/2.1.0-github/lib/ruby/2.1.0/rubygems/specification.rb x 1169
-/home/sam/.rbenv/versions/2.1.0-github/lib/ruby/2.1.0/rubygems/defaults.rb x 520
-/home/sam/.rbenv/versions/2.1.0-github/lib/ruby/2.1.0/rubygems/core_ext/kernel_gem.rb x 80
-/home/sam/.rbenv/versions/2.1.0-github/lib/ruby/2.1.0/rubygems/version.rb x 80
-
-. . .
-```
+    pry> require 'memory_profiler'
+    pry> Memory.report(allow_files: 'rubygems'){ require 'mime-types' }.pretty_print
+    Total allocated 82375
+    Total retained 22618
+    
+    allocated memory by gem
+    -----------------------------------
+    rubygems x 305879
+    
+    allocated memory by file
+    -----------------------------------
+    /home/sam/.rbenv/versions/2.1.0-github/lib/ruby/2.1.0/rubygems/core_ext/kernel_require.rb x 285433
+    /home/sam/.rbenv/versions/2.1.0-github/lib/ruby/2.1.0/rubygems/basic_specification.rb x 18597
+    /home/sam/.rbenv/versions/2.1.0-github/lib/ruby/2.1.0/rubygems.rb x 2218
+    /home/sam/.rbenv/versions/2.1.0-github/lib/ruby/2.1.0/rubygems/specification.rb x 1169
+    /home/sam/.rbenv/versions/2.1.0-github/lib/ruby/2.1.0/rubygems/defaults.rb x 520
+    /home/sam/.rbenv/versions/2.1.0-github/lib/ruby/2.1.0/rubygems/core_ext/kernel_gem.rb x 80
+    /home/sam/.rbenv/versions/2.1.0-github/lib/ruby/2.1.0/rubygems/version.rb x 80
+    
+    . . .
 
 ### `pretty_print`
 
 The `pretty_print` method can take a few options:
 
-* `to_file`: a path to your log file - can be given a String
-* `color_output`: a flag for whether to colorize output - can be given a Boolean
-* `retained_strings`: how many retained strings to print - can be given an Integer
-* `allocated_strings`: how many allocated strings to print - can be given a String
-* `detailed_report`: should report include detailed information - can be given a Boolean
-* `scale_bytes`: flag to convert byte units (e.g. 183200000 is reported as 183.2 MB, rounds with a precision of 2 decimal digits) - can be given a Boolean
-* `normalize_paths`: flag to remove a gem's directory path from printed locations - can be given a Boolean
-*Note: normalized path of a "location" from Ruby's stdlib will be prefixed with `ruby/lib/`. e.g.: `ruby/lib/set.rb`, `ruby/lib/pathname.rb`, etc.*
-
+  - `to_file`: a path to your log file - can be given a String
+  - `color_output`: a flag for whether to colorize output - can be given a Boolean
+  - `retained_strings`: how many retained strings to print - can be given an Integer
+  - `allocated_strings`: how many allocated strings to print - can be given a String
+  - `detailed_report`: should report include detailed information - can be given a Boolean
+  - `scale_bytes`: flag to convert byte units (e.g. 183200000 is reported as 183.2 MB, rounds with a precision of 2 decimal digits) - can be given a Boolean
+  - `normalize_paths`: flag to remove a gem's directory path from printed locations - can be given a Boolean
+    *Note: normalized path of a "location" from Ruby's stdlib will be prefixed with `ruby/lib/`. e.g.: `ruby/lib/set.rb`, `ruby/lib/pathname.rb`, etc.*
 
 Check out `Results#pretty_print` for more details.
 
 For example to report to file, use `pretty_print` method with `to_file` option and `path_to_your_log_file` string:
-```
-$ pry
-pry> require 'memory_profiler'
-pry> MemoryProfiler.report(allow_files: 'rubygems'){ require 'mime-types' }.pretty_print(to_file: 'path_to_your_log_file')
 
-$ less my_report.txt
-Total allocated 82375
-Total retained 22618
-
-allocated memory by gem
------------------------------------
-rubygems x 305879
-
-. . .
-```
+    $ pry
+    pry> require 'memory_profiler'
+    pry> Memory.report(allow_files: 'rubygems'){ require 'mime-types' }.pretty_print(to_file: 'path_to_your_log_file')
+    
+    $ less my_report.txt
+    Total allocated 82375
+    Total retained 22618
+    
+    allocated memory by gem
+    -----------------------------------
+    rubygems x 305879
+    
+    . . .
 
 ## Example Session
 
-You can easily use memory_profiler to profile require impact of a gem, for example:
+You can easily use memory\_profiler to profile require impact of a gem, for example:
 
-
-```
+``` 
 pry> require 'memory_profiler'
-pry> MemoryProfiler.report{ require 'mime-types'  }.pretty_print
+pry> Memory.report{ require 'mime-types'  }.pretty_print
 Total allocated 82375
 Total retained 22618
 
@@ -372,7 +366,7 @@ Retained String Report
 
 ```
 
-The data is also available in the MemoryProfiler::Results object returned.
+The data is also available in the Memory::Results object returned.
 
 ### Retained vs Allocated
 
@@ -386,14 +380,12 @@ As a general rule "retained" will always be smaller than or equal to allocated.
 
 Memory profiler will tell you aggregate costs of the above, for example requiring the mime-types gem above results in approx 2MB of retained memory in 22K or so objects. The actual RSS cost will always be slightly higher as MRI heaps are not squashed to size and memory fragments. In future we may be able to calculate a rough long term GC cost of retained objects (for major GCs).
 
-Memory profiler also performs some String analysis to help you find strings that would heavily benefit from #freeze. In the example above the string IANA is retained in memory 2824 times, this costs you a minimum of RVALUE_SIZE (40 on x64) * 2824.
-
-
+Memory profiler also performs some String analysis to help you find strings that would heavily benefit from \#freeze. In the example above the string IANA is retained in memory 2824 times, this costs you a minimum of RVALUE\_SIZE (40 on x64) \* 2824.
 
 ## Contributing
 
-1. Fork it
-2. Create your feature branch (`git checkout -b my-new-feature`)
-3. Commit your changes (`git commit -am 'Add some feature'`)
-4. Push to the branch (`git push origin my-new-feature`)
-5. Create new Pull Request
+1.  Fork it
+2.  Create your feature branch (`git checkout -b my-new-feature`)
+3.  Commit your changes (`git commit -am 'Add some feature'`)
+4.  Push to the branch (`git push origin my-new-feature`)
+5.  Create new Pull Request

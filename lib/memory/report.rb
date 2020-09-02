@@ -2,7 +2,7 @@
 
 require_relative 'aggregate'
 
-module MemoryProfiler
+module Memory
   class Report
     def self.general
       Report.new([

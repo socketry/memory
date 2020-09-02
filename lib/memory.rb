@@ -1,13 +1,11 @@
 # frozen_string_literal: true
 
-require "memory_profiler/version"
-require "memory_profiler/cache"
-require "memory_profiler/polychrome"
-require "memory_profiler/monochrome"
-require "memory_profiler/report"
-require "memory_profiler/sampler"
+require_relative "memory/version"
+require_relative "memory/cache"
+require_relative "memory/report"
+require_relative "memory/sampler"
 
-module MemoryProfiler
+module Memory
   def self.report(opts = {}, &block)
     Reporter.report(opts, &block)
   end

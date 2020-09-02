@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module MemoryProfiler
+module Memory
   class Cache
     def initialize
       @gem_guess_cache = Hash.new

@@ -3,7 +3,7 @@
 require 'objspace'
 require 'msgpack'
 
-module MemoryProfiler
+module Memory
   class Deque
     def initialize
       @segments = []

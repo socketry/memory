@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module MemoryProfiler
+module Memory
 	UNITS = {
 		0 => 'B',
 		3 => 'KiB',
@@ -37,7 +37,7 @@ module MemoryProfiler
 			end
 			
 			def to_s
-				"(#{MemoryProfiler.formatted_bytes memory} in #{count} allocations)"
+				"(#{Memory.formatted_bytes memory} in #{count} allocations)"
 			end
 		end
 		
