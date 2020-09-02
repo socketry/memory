@@ -20,43 +20,34 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-module Memory
-	class Cache
-		def initialize
-			@gem_guess_cache = Hash.new
-			@location_cache = Hash.new { |h, k| h[k] = Hash.new.compare_by_identity }
-			@class_name_cache = Hash.new.compare_by_identity
-			@string_cache = Hash.new
-		end
+require 'memory'
 
-		def guess_gem(path)
-			@gem_guess_cache[path] ||=
-				if /(\/gems\/.*)*\/gems\/(?<gemname>[^\/]+)/ =~ path
-					gemname
-				elsif /\/rubygems[\.\/]/ =~ path
-					"rubygems"
-				elsif /ruby\/2\.[^\/]+\/(?<stdlib>[^\/\.]+)/ =~ path
-					stdlib
-				elsif /(?<app>[^\/]+\/(bin|app|lib))/ =~ path
-					app
-				else
-					"other"
-				end
+RSpec.describe Memory::Sampler do
+	it "captures allocations" do
+		subject.run do
+			Array.new
 		end
-
-		def lookup_location(file, line)
-			@location_cache[file][line] ||= "#{file}:#{line}"
+		
+		expect(subject.allocated.size).to be == 1
+		
+		allocation = subject.allocated.first
+		expect(allocation.class_name).to be == "Array"
+		expect(allocation.file).to end_with("sampler_spec.rb")
+		expect(allocation.retained).to be false
+	end
+	
+	it "captures retained allocations" do
+		x = nil
+		
+		subject.run do
+			x = Array.new
 		end
-
-		def lookup_class_name(klass)
-			@class_name_cache[klass] ||= ((klass.is_a?(Class) && klass.name) || '<<Unknown>>').to_s
-		end
-
-		def lookup_string(obj)
-			# This string is shortened to 200 characters which is what the string report shows
-			# The string report can still list unique strings longer than 200 characters
-			#   separately because the object_id of the shortened string will be different
-			@string_cache[obj] ||= String.new << obj[0, 64]
-		end
+		
+		expect(subject.allocated.size).to be == 1
+		
+		allocation = subject.allocated.first
+		expect(allocation.class_name).to be == "Array"
+		expect(allocation.file).to end_with("sampler_spec.rb")
+		expect(allocation.retained).to be true
 	end
 end
