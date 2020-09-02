@@ -44,6 +44,74 @@ report = sampler.report
 report.print
 ~~~
 
+### RSpec Integration
+
+~~~ ruby
+memory_sampler = nil
+config.before(:all) do |example_group|
+	name = example_group.class.description.gsub(/[^\w]+/, "-")
+	path = "#{name}.mprof"
+	
+	skip if File.exist?(path)
+	
+	memory_sampler = Memory::Sampler.new
+	memory_sampler.start
+end
+
+config.after(:all) do |example_group|
+	name = example_group.class.description.gsub(/[^\w]+/, "-")
+	path = "#{name}.mprof"
+	
+	if memory_sampler
+		memory_sampler.stop
+		
+		File.open(path, "w", encoding: Encoding::BINARY) do |io|
+			memory_sampler.dump(io)
+		end
+		
+		memory_sampler = nil
+	end
+end
+
+config.after(:suite) do
+	memory_sampler = Memory::Sampler.new
+	
+	Dir.glob("*.mprof") do |path|
+		memory_sampler.load(File.read(
+			path,
+			encoding: Encoding::BINARY,
+		))
+	end
+	
+	memory_sampler.results.print
+end
+~~~
+
+#### Raw Object Allocations
+
+~~~ ruby
+before = nil
+
+config.before(:suite) do |example|
+	3.times{GC.start}
+	GC.disable
+	before = ObjectSpace.count_objects
+end
+
+config.after(:suite) do |example|
+	after = ObjectSpace.count_objects
+	GC.enable
+	
+	$stderr.puts
+	$stderr.puts "Object Allocations:"
+	
+	after.each do |key, b|
+		a = before.fetch(key, 0)
+		$stderr.puts "#{key}: #{a} -> #{b} = #{b-a} allocations"
+	end
+end
+~~~
+
 ## Contributing
 
 We welcome contributions to this project.
