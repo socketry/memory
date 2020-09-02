@@ -92,19 +92,15 @@ module Memory
 			ObjectSpace.trace_object_allocations_stop
 			allocated = track_allocations(@generation)
 			
-			Console.logger.debug(self, "Got allocated list: #{allocated.size}, Allocated object count: #{ObjectSpace.count_objects.inspect}")
+			# **WARNING** Do not allocate any new Objects between the call to GC.start and the completion of the retained lookups. It is likely that a new Object would reuse an object_id from a GC'd object.
 			
 			GC.enable
 			3.times{GC.start}
 			
-			Console.logger.debug(self, "Retained object count: #{ObjectSpace.count_objects.inspect}")
-			
-			# Caution: Do not allocate any new Objects between the call to GC.start and the completion of the retained lookups. It is likely that a new Object would reuse an object_id from a GC'd object.
-			
-			ObjectSpace.each_object do |obj|
-				next unless ObjectSpace.allocation_generation(obj) == @generation
+			ObjectSpace.each_object do |object|
+				next unless ObjectSpace.allocation_generation(object) == @generation
 				
-				if found = allocated[obj.__id__]
+				if found = allocated[object.__id__]
 					found.retained = true
 				end
 			end
@@ -146,7 +142,7 @@ module Memory
 			
 			begin
 				# We do this to avoid retaining the result of the block.
-				yield && nil
+				yield && false
 			ensure
 				stop
 			end
@@ -161,27 +157,27 @@ module Memory
 			
 			allocated = Hash.new.compare_by_identity
 			
-			ObjectSpace.each_object do |obj|
-				next unless ObjectSpace.allocation_generation(obj) == generation
+			ObjectSpace.each_object do |object|
+				next unless ObjectSpace.allocation_generation(object) == generation
 				
-				file = ObjectSpace.allocation_sourcefile(obj) || "(no name)"
+				file = ObjectSpace.allocation_sourcefile(object) || "(no name)"
 				
-				klass = obj.class rescue nil
+				klass = object.class rescue nil
 				
 				unless Class === klass
 					# attempt to determine the true Class when .class returns something other than a Class
-					klass = Kernel.instance_method(:class).bind(obj).call
+					klass = Kernel.instance_method(:class).bind(object).call
 				end
 				
 				next if @filter && !@filter.call(klass, file)
 				
-				line = ObjectSpace.allocation_sourceline(obj)
+				line = ObjectSpace.allocation_sourceline(object)
 				
 				# we do memsize first to avoid freezing as a side effect and shifting
 				# storage to the new frozen string, this happens on @hash[s] in lookup_string
-				memsize = ObjectSpace.memsize_of(obj)
+				memsize = ObjectSpace.memsize_of(object)
 				class_name = @cache.lookup_class_name(klass)
-				value = (klass == String) ? @cache.lookup_string(obj) : nil
+				value = (klass == String) ? @cache.lookup_string(object) : nil
 				
 				# compensate for API bug
 				memsize = rvalue_size if memsize > 100_000_000_000
@@ -189,7 +185,7 @@ module Memory
 				allocation = Allocation.new(@cache, class_name, file, line, memsize, value, false)
 				
 				@allocated << allocation
-				allocated[obj.__id__] = allocation
+				allocated[object.__id__] = allocation
 			end
 			
 			return allocated
