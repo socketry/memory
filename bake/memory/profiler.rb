@@ -1,13 +1,12 @@
 # frozen_string_literal: true
 
-def check
+# @parameter paths [Array(String)] The paths which contain the memory profiles.
+def check(paths:)
 	require 'console'
-	
-	paths = Dir["../../*.mprof"]
 	
 	total_size = paths.sum{|path| File.size(path)}
 	
-	require_relative 'lib/memory_profiler'
+	require_relative '../../lib/memory'
 	
 	report = Memory::Report.general
 	
@@ -32,6 +31,4 @@ def check
 	end
 	
 	report.print($stdout)
-	
-	binding.irb
 end
