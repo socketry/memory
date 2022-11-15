@@ -10,7 +10,7 @@ describe Memory::Sampler do
 	
 	it "captures allocations" do
 		sampler.run do
-			Array.new
+			Array.new; nil
 		end
 		
 		expect(sampler.allocated.size).to be == 1
