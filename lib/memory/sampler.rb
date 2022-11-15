@@ -75,6 +75,9 @@ module Memory
 		
 		def start
 			GC.disable
+			3.times{GC.start}
+			
+			# Ensure any allocations related to the block are freed:
 			GC.start
 			
 			@generation = GC.count
@@ -89,6 +92,9 @@ module Memory
 			
 			GC.enable
 			3.times{GC.start}
+			
+			# See above.
+			GC.start
 			
 			ObjectSpace.each_object do |object|
 				next unless ObjectSpace.allocation_generation(object) == @generation

@@ -26,7 +26,15 @@ module Memory
 		end
 		
 		attr :total_allocated
+		attr :total_retained
+		attr :aggregates
 		
+		# Add all samples from the given sampler to this report.
+		def add(sampler)
+			self.concat(sampler.allocated)
+		end
+		
+		# Add allocations to this report.
 		def concat(allocations)
 			allocations.each do |allocation|
 				@total_allocated << allocation
@@ -37,7 +45,7 @@ module Memory
 				end
 			end
 		end
-
+		
 		def print(io = $stderr)
 			io.puts "\# Memory Profile", nil
 			

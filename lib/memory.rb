@@ -13,10 +13,17 @@ require_relative "memory/report"
 require_relative "memory/sampler"
 
 module Memory
-	def self.report(&block)
+	def self.capture(report = nil, &block)
 		sampler = Sampler.new
 		sampler.run(&block)
 		
-		return sampler.report
+		report ||= Report.general
+		report.add(sampler)
+		
+		return report
+	end
+	
+	def self.report(&block)
+		self.capture(&block)
 	end
 end
