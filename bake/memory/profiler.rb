@@ -1,6 +1,11 @@
 # frozen_string_literal: true
 
-# @parameter paths [Array(String)] The paths which contain the memory profiles.
+# Released under the MIT License.
+# Copyright, 2013-2018, by Sam.
+# Copyright, 2014, by schneems.
+# Copyright, 2018, by Jonas Peschla.
+# Copyright, 2020, by Samuel Williams.
+
 def check(paths:)
 	require 'console'
 	
