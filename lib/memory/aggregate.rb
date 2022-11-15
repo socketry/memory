@@ -42,6 +42,13 @@ module Memory
 			def to_s
 				"(#{Memory.formatted_bytes memory} in #{count} allocations)"
 			end
+			
+			def as_json
+				{
+					memory: memory,
+					count: count
+				}
+			end
 		end
 		
 		def initialize(title, &block)
@@ -52,7 +59,10 @@ module Memory
 			@totals = Hash.new{|h,k| h[k] = Total.new}
 		end
 		
+		attr :title
+		attr :metric
 		attr :total
+		attr :totals
 		
 		def << allocation
 			metric = @metric.call(allocation)
@@ -78,6 +88,14 @@ module Memory
 			
 			io.puts nil
 		end
+		
+		def as_json
+			{
+				title: @title,
+				total: @total.as_json,
+				totals: @totals.map{|k, v| [k, v.as_json]}
+			}
+		end
 	end
 	
 	class ValueAggregate
@@ -87,6 +105,10 @@ module Memory
 			
 			@aggregates = Hash.new{|h,k| h[k] = Aggregate.new(k.inspect, &@metric)}
 		end
+		
+		attr :title
+		attr :metric
+		attr :aggregates
 		
 		def << allocation
 			if value = allocation.value
@@ -106,6 +128,13 @@ module Memory
 			aggregates_by(:count).last(limit).reverse_each do |value, aggregate|
 				aggregate.print(io, level: level+1)
 			end
+		end
+		
+		def as_json
+			{
+				title: @title,
+				aggregates: @aggregates.map{|k, v| [k, v.as_json]}
+			}
 		end
 	end
 end

@@ -49,5 +49,17 @@ module Memory
 				aggregate.print(io)
 			end
 		end
+		
+		def as_json
+			{
+				total_allocated: @total_allocated.as_json,
+				total_retained: @total_retained.as_json,
+				aggregates: @aggregates.map(&:as_json)
+			}
+		end
+		
+		def to_json(...)
+			as_json.to_json(...)
+		end
 	end
 end
