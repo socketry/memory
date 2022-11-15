@@ -1,5 +1,8 @@
 # frozen_string_literal: true
 
+# Released under the MIT License.
+# Copyright, 2020-2022, by Samuel Williams.
+
 source "https://rubygems.org"
 
 # Specify your gem's dependencies in db.gemspec
@@ -13,5 +16,5 @@ group :maintenance, optional: true do
 end
 
 group :test do
-	gem 'longhorn', path: 'spec/fixtures/gems/longhorn-0.1.0'
+	gem 'longhorn', path: 'fixtures/gems/longhorn-0.1.0'
 end

@@ -2,20 +2,20 @@
 
 A set of tools for profiling memory in Ruby.
 
-[![Development Status](https://github.com/socketry/memory/workflows/Development/badge.svg)](https://github.com/socketry/memory/actions?workflow=Development)
+[![Development Status](https://github.com/socketry/memory/workflows/Test/badge.svg)](https://github.com/socketry/memory/actions?workflow=Test)
 
 ## Features
 
-- Fast memory capture for million+ allocations.
-- Persist results to disk for vast aggregations and comparisons over time.
+  - Fast memory capture for million+ allocations.
+  - Persist results to disk for vast aggregations and comparisons over time.
 
 ## Installation
 
 Add this line to your application's Gemfile:
 
-~~~ shell
+``` shell
 $ bundle add 'memory'
-~~~
+```
 
 ## Usage
 
@@ -31,7 +31,7 @@ report.print
 
 Or, you can use the `.start`/`.stop` methods as well:
 
-~~~ ruby
+``` ruby
 require 'memory'
 
 sampler = Memory::Sampler.new
@@ -42,11 +42,11 @@ sampler.stop
 
 report = sampler.report
 report.print
-~~~
+```
 
 ### RSpec Integration
 
-~~~ ruby
+``` ruby
 memory_sampler = nil
 config.before(:all) do |example_group|
 	name = example_group.class.description.gsub(/[^\w]+/, "-")
@@ -85,11 +85,11 @@ config.after(:suite) do
 	
 	memory_sampler.results.print
 end
-~~~
+```
 
 #### Raw Object Allocations
 
-~~~ ruby
+``` ruby
 before = nil
 
 config.before(:suite) do |example|
@@ -110,7 +110,7 @@ config.after(:suite) do |example|
 		$stderr.puts "#{key}: #{a} -> #{b} = #{b-a} allocations"
 	end
 end
-~~~
+```
 
 ## Contributing
 
@@ -121,25 +121,3 @@ We welcome contributions to this project.
 3.  Commit your changes (`git commit -am 'Add some feature'`).
 4.  Push to the branch (`git push origin my-new-feature`).
 5.  Create new Pull Request.
-
-## License
-
-Copyright, 2020, by [Samuel G. D. Williams](https://www.codeotaku.com).
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
