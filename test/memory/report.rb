@@ -7,7 +7,7 @@ require 'memory'
 
 describe Memory::Report do
 	let(:report) do
-		Memory.report do |report|
+		Memory.report do
 			Array.new
 			"Hello World".dup
 		end
@@ -33,5 +33,23 @@ describe Memory::Report do
 		)
 		
 		expect(result[:aggregates]).to have_attributes(size: be == 6)
+	end
+	
+	with 'custom report' do
+		let(:report) do
+			Memory::Report.new([
+				Memory::Aggregate.new("By Gem", &:gem),
+				Memory::Aggregate.new("By File", &:file),
+				Memory::Aggregate.new("By Class", &:class_name),
+			])
+		end
+		
+		it "captures allocations" do
+			Memory.capture(report) do
+				Array.new
+			end
+			
+			expect(report.aggregates).to have_attributes(size: be == 3)
+		end
 	end
 end
