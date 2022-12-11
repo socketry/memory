@@ -18,7 +18,7 @@ def check(paths:)
 	cache = Memory::Cache.new
 	wrapper = Memory::Wrapper.new(cache)
 	
-	measure = Console.logger.measure(report, total_size)
+	progress = Console.logger.progress(report, total_size)
 	
 	paths.each do |path|
 		Console.logger.info(report, "Loading #{path}, #{Memory.formatted_bytes File.size(path)}")
@@ -29,7 +29,7 @@ def check(paths:)
 			
 			report.concat(unpacker)
 			
-			measure.increment(io.size)
+			progress.increment(io.size)
 		end
 		
 		Console.logger.info(report, "Loaded allocations, #{report.total_allocated}")
