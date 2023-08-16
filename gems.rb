@@ -1,11 +1,10 @@
 # frozen_string_literal: true
 
 # Released under the MIT License.
-# Copyright, 2020-2022, by Samuel Williams.
+# Copyright, 2020-2023, by Samuel Williams.
 
 source "https://rubygems.org"
 
-# Specify your gem's dependencies in db.gemspec
 gemspec
 
 group :maintenance, optional: true do
@@ -16,5 +15,10 @@ group :maintenance, optional: true do
 end
 
 group :test do
+	gem "bake-test"
+	gem "bake-test-external"
+	gem "covered"
+	gem "sus"
+	
 	gem 'longhorn', path: 'fixtures/gems/longhorn-0.1.0'
 end
