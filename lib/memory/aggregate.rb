@@ -43,7 +43,7 @@ module Memory
 				"(#{Memory.formatted_bytes memory} in #{count} allocations)"
 			end
 			
-			def as_json
+			def as_json(options = nil)
 				{
 					memory: memory,
 					count: count
@@ -89,11 +89,11 @@ module Memory
 			io.puts nil
 		end
 		
-		def as_json
+		def as_json(options = nil)
 			{
 				title: @title,
-				total: @total.as_json,
-				totals: @totals.map{|k, v| [k, v.as_json]}
+				total: @total.as_json(options),
+				totals: @totals.map{|k, v| [k, v.as_json(options)]}
 			}
 		end
 	end
@@ -130,7 +130,7 @@ module Memory
 			end
 		end
 		
-		def as_json
+		def as_json(options = nil)
 			{
 				title: @title,
 				aggregates: @aggregates.map{|k, v| [k, v.as_json]}

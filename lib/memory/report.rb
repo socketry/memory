@@ -58,11 +58,11 @@ module Memory
 			end
 		end
 		
-		def as_json
+		def as_json(options = nil)
 			{
-				total_allocated: @total_allocated.as_json,
-				total_retained: @total_retained.as_json,
-				aggregates: @aggregates.map(&:as_json)
+				total_allocated: @total_allocated.as_json(options),
+				total_retained: @total_retained.as_json(options),
+				aggregates: @aggregates.map{|aggregate| aggregate.as_json(options)}
 			}
 		end
 		
