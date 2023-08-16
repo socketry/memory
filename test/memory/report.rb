@@ -13,6 +13,10 @@ describe Memory::Report do
 		end
 	end
 	
+	it "accepts options" do
+		result = report.as_json(max_nesting: 1)
+	end
+	
 	it "captures allocations" do
 		result = report.as_json
 		
