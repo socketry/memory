@@ -4,7 +4,7 @@
 # Copyright, 2013-2019, by Sam Saffron.
 # Copyright, 2015-2016, by Dave Gynn.
 # Copyright, 2018, by Jonas Peschla.
-# Copyright, 2020-2022, by Samuel Williams.
+# Copyright, 2020-2024, by Samuel Williams.
 
 module Memory
 	VERSION = "0.4.1"

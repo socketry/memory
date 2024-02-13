@@ -11,7 +11,7 @@
 # Copyright, 2018, by Jonas Peschla.
 # Copyright, 2018, by Espartaco Palma.
 # Copyright, 2020, by Jean Boussier.
-# Copyright, 2020-2022, by Samuel Williams.
+# Copyright, 2020-2024, by Samuel Williams.
 
 require 'objspace'
 require 'msgpack'
