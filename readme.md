@@ -49,41 +49,40 @@ report.print
 ``` ruby
 memory_sampler = nil
 config.before(:all) do |example_group|
-	name = example_group.class.description.gsub(/[^\w]+/, "-")
+	name = example_group.class.description.gsub(/[^\w]+/, '-')
 	path = "#{name}.mprof"
-	
+
 	skip if File.exist?(path)
-	
+
 	memory_sampler = Memory::Sampler.new
 	memory_sampler.start
 end
 
 config.after(:all) do |example_group|
-	name = example_group.class.description.gsub(/[^\w]+/, "-")
+	name = example_group.class.description.gsub(/[^\w]+/, '-')
 	path = "#{name}.mprof"
-	
+
 	if memory_sampler
 		memory_sampler.stop
-		
+
 		File.open(path, "w", encoding: Encoding::BINARY) do |io|
 			memory_sampler.dump(io)
 		end
-		
+
 		memory_sampler = nil
 	end
 end
 
 config.after(:suite) do
 	memory_sampler = Memory::Sampler.new
-	
-	Dir.glob("*.mprof") do |path|
-		memory_sampler.load(File.read(
-			path,
-			encoding: Encoding::BINARY,
-		))
+
+	Dir.glob('*.mprof') do |path|
+		$stderr.puts "Loading #{path}..."
+		memory_sampler.load(File.read(path, encoding: Encoding::BINARY))
 	end
-	
-	memory_sampler.results.print
+
+	$stderr.puts "Memory usage:"
+	memory_sampler.report.print
 end
 ```
 
