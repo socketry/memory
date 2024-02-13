@@ -67,6 +67,10 @@ module Memory
 			@allocated = Array.new
 		end
 		
+		def inspect
+			"#<#{self.class} #{@allocated.size} allocations>"
+		end
+		
 		attr :filter
 		
 		attr :cache
