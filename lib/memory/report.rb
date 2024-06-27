@@ -7,7 +7,7 @@ require_relative 'aggregate'
 
 module Memory
 	class Report
-		def self.general
+		def self.general(**options)
 			Report.new([
 				Aggregate.new("By Gem", &:gem),
 				Aggregate.new("By File", &:file),
@@ -15,10 +15,12 @@ module Memory
 				Aggregate.new("By Class", &:class_name),
 				ValueAggregate.new("Strings By Gem", &:gem),
 				ValueAggregate.new("Strings By Location", &:location),
-			])
+			], **options)
 		end
 		
-		def initialize(aggregates)
+		def initialize(aggregates, retained_only: true)
+			@retained_only = retained_only
+			
 			@total_allocated = Aggregate::Total.new
 			@total_retained = Aggregate::Total.new
 			
@@ -38,16 +40,25 @@ module Memory
 		def concat(allocations)
 			allocations.each do |allocation|
 				@total_allocated << allocation
-				@total_retained << allocation if allocation.retained
 				
-				@aggregates.each do |aggregate|
-					aggregate << allocation
+				if allocation.retained
+					@total_retained << allocation
+				end
+				
+				if !@retained_only || allocation.retained
+					@aggregates.each do |aggregate|
+						aggregate << allocation
+					end
 				end
 			end
 		end
 		
 		def print(io = $stderr)
-			io.puts "\# Memory Profile", nil
+			if @retained_only
+				io.puts "\# Retained Memory Profile", nil
+			else
+				io.puts "\# Memory Profile", nil
+			end
 			
 			io.puts "- Total Allocated: #{@total_allocated}"
 			io.puts "- Total Retained: #{@total_retained}"

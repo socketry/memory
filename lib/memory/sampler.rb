@@ -133,8 +133,8 @@ module Memory
 			@allocated.concat(allocations)
 		end
 		
-		def report
-			report = Report.general
+		def report(**options)
+			report = Report.general(**options)
 			
 			report.concat(@allocated)
 			
