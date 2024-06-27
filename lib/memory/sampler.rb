@@ -17,6 +17,8 @@ require 'objspace'
 require 'msgpack'
 require 'console'
 
+require_relative 'cache'
+
 module Memory
 	class Wrapper < MessagePack::Factory
 		def initialize(cache)
