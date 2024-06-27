@@ -31,7 +31,7 @@ module Memory
 			end
 			
 			def << allocation
-				self.memory += allocation.size
+				self.memory += allocation.memsize
 				self.count += 1
 			end
 			
