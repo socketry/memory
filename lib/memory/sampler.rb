@@ -96,6 +96,9 @@ module Memory
 			
 			# **WARNING** Do not allocate any new Objects between the call to GC.start and the completion of the retained lookups. It is likely that a new Object would reuse an object_id from a GC'd object.
 			
+			# Overwrite any immediate values on the C stack to avoid retaining them.
+			ObjectSpace.dump(Object.new)
+			
 			GC.enable
 			3.times{GC.start}
 			
@@ -160,7 +163,7 @@ module Memory
 		def track_allocations(generation)
 			rvalue_size = GC::INTERNAL_CONSTANTS[:RVALUE_SIZE]
 			
-			allocated = Hash.new.compare_by_identity
+			allocated = Hash.new
 			
 			ObjectSpace.each_object do |object|
 				next unless ObjectSpace.allocation_generation(object) == generation
