@@ -94,6 +94,10 @@ end
 
 Please see the [project releases](https://socketry.github.io/memory/releases/index) for all releases.
 
+### v0.7.0
+
+  - Add `Memory::Sampler#as_json` and `#to_json`.
+
 ### v0.6.0
 
   - Add agent context.
