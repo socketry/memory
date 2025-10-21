@@ -231,6 +231,22 @@ module Memory
 			return report
 		end
 		
+		# Convert this sampler to a JSON-compatible summary.
+		# Returns the allocation count without iterating through all allocations.
+		# @parameter options [Hash | Nil] Optional JSON serialization options.
+		# @returns [Hash] JSON-compatible summary of sampler data.
+		def as_json(options = nil)
+			{
+				allocations: @allocated.size
+			}
+		end
+		
+		# Convert this sampler to a JSON string.
+		# @returns [String] JSON representation of this sampler summary.
+		def to_json(...)
+			as_json.to_json(...)
+		end
+		
 		# Collects object allocation and memory of ruby code inside of passed block.
 		def run(&block)
 			start

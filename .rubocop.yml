@@ -37,6 +37,9 @@ Layout/BeginEndAlignment:
 Layout/RescueEnsureAlignment:
   Enabled: true
 
+Layout/FirstHashElementIndentation:
+  Enabled: true
+
 Layout/ElseAlignment:
   Enabled: true
 

@@ -38,4 +38,34 @@ describe Memory::Sampler do
 		expect(allocation.file).to be(:end_with?, "sampler.rb")
 		expect(allocation.retained).to be_truthy
 	end
+	
+	with "#as_json" do
+		it "returns allocation count" do
+			x = nil
+			
+			sampler.run do
+				x = MyThing.new
+			end
+			
+			json_data = sampler.as_json
+			
+			expect(json_data).to have_keys(:allocations)
+			expect(json_data[:allocations]).to be > 0
+		end
+	end
+	
+	with "#to_json" do
+		it "produces valid JSON string" do
+			x = nil
+			
+			sampler.run do
+				x = MyThing.new
+			end
+			
+			json_string = sampler.to_json
+			parsed = JSON.parse(json_string)
+			
+			expect(parsed["allocations"]).to be > 0
+		end
+	end
 end
