@@ -3,7 +3,7 @@
 # Released under the MIT License.
 # Copyright, 2022-2023, by Samuel Williams.
 
-require 'memory'
+require "memory"
 
 describe Memory::Report do
 	let(:report) do
@@ -39,7 +39,7 @@ describe Memory::Report do
 		expect(result[:aggregates]).to have_attributes(size: be == 6)
 	end
 	
-	with 'custom report' do
+	with "custom report" do
 		let(:report) do
 			Memory::Report.new([
 				Memory::Aggregate.new("By Gem", &:gem),

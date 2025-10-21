@@ -1,13 +1,18 @@
 # frozen_string_literal: true
 
 # Released under the MIT License.
-# Copyright, 2020-2022, by Samuel Williams.
+# Copyright, 2020-2025, by Samuel Williams.
 
-require_relative '../sampler'
+require_relative "../sampler"
 
 module Memory
+	# @namespace
 	module RSpec
+		# Integration with RSpec for memory profiling test suites.
+		# Profiles memory allocations for RSpec example groups and generates reports.
 		module Profiler
+			# Profile memory allocations for RSpec examples.
+			# @parameter scope [Object] The RSpec scope to apply profiling hooks to.
 			def self.profile(scope)
 				memory_sampler = nil
 				

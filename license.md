@@ -24,7 +24,7 @@ Copyright, 2019-2020, by Jean Boussier.
 Copyright, 2019, by Ashwin Maroli.  
 Copyright, 2019, by Olle Jonsson.  
 Copyright, 2019, by Danny Ben Shitrit.  
-Copyright, 2020-2024, by Samuel Williams.  
+Copyright, 2020-2025, by Samuel Williams.  
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

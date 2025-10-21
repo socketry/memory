@@ -20,7 +20,7 @@ $ bundle add 'memory'
 ## Usage
 
 ``` ruby
-require 'memory'
+require "memory"
 
 report = Memory.report do
 	# run your code here
@@ -32,7 +32,7 @@ report.print
 Or, you can use the `.start`/`.stop` methods as well:
 
 ``` ruby
-require 'memory'
+require "memory"
 
 sampler = Memory::Sampler.new
 
@@ -49,38 +49,38 @@ report.print
 ``` ruby
 memory_sampler = nil
 config.before(:all) do |example_group|
-	name = example_group.class.description.gsub(/[^\w]+/, '-')
+	name = example_group.class.description.gsub(/[^\w]+/, "-")
 	path = "#{name}.mprof"
-
+	
 	skip if File.exist?(path)
-
+	
 	memory_sampler = Memory::Sampler.new
 	memory_sampler.start
 end
 
 config.after(:all) do |example_group|
-	name = example_group.class.description.gsub(/[^\w]+/, '-')
+	name = example_group.class.description.gsub(/[^\w]+/, "-")
 	path = "#{name}.mprof"
-
+	
 	if memory_sampler
 		memory_sampler.stop
-
+		
 		File.open(path, "w", encoding: Encoding::BINARY) do |io|
 			memory_sampler.dump(io)
 		end
-
+		
 		memory_sampler = nil
 	end
 end
 
 config.after(:suite) do
 	memory_sampler = Memory::Sampler.new
-
-	Dir.glob('*.mprof') do |path|
+	
+	Dir.glob("*.mprof") do |path|
 		$stderr.puts "Loading #{path}..."
 		memory_sampler.load(File.read(path, encoding: Encoding::BINARY))
 	end
-
+	
 	$stderr.puts "Memory usage:"
 	memory_sampler.report.print
 end
@@ -111,6 +111,10 @@ config.after(:suite) do |example|
 end
 ```
 
+## Releases
+
+There are no documented releases.
+
 ## Contributing
 
 We welcome contributions to this project.
@@ -123,8 +127,8 @@ We welcome contributions to this project.
 
 ### Developer Certificate of Origin
 
-This project uses the [Developer Certificate of Origin](https://developercertificate.org/). All contributors to this project must agree to this document to have their contributions accepted.
+In order to protect users of this project, we require all contributors to comply with the [Developer Certificate of Origin](https://developercertificate.org/). This ensures that all contributions are properly licensed and attributed.
 
-### Contributor Covenant
+### Community Guidelines
 
-This project is governed by the [Contributor Covenant](https://www.contributor-covenant.org/). All contributors and participants agree to abide by its terms.
+This project is best served by a collaborative and respectful environment. Treat each other professionally, respect differing viewpoints, and engage constructively. Harassment, discrimination, or harmful behavior is not tolerated. Communicate clearly, listen actively, and support one another. If any issues arise, please inform the project maintainers.

@@ -1,21 +1,24 @@
 # frozen_string_literal: true
 
 # Released under the MIT License.
-# Copyright, 2020-2024, by Samuel Williams.
+# Copyright, 2020-2025, by Samuel Williams.
 
 module Memory
 	UNITS = {
-		0 => 'B',
-		3 => 'KiB',
-		6 => 'MiB',
-		9 => 'GiB',
-		12 => 'TiB',
-		15 => 'PiB',
-		18 => 'EiB',
-		21 => 'ZiB',
-		24 => 'YiB'
+		0 => "B",
+		3 => "KiB",
+		6 => "MiB",
+		9 => "GiB",
+		12 => "TiB",
+		15 => "PiB",
+		18 => "EiB",
+		21 => "ZiB",
+		24 => "YiB"
 	}.freeze
 	
+	# Format bytes into human-readable units.
+	# @parameter bytes [Integer] The number of bytes to format.
+	# @returns [String] Formatted string with appropriate unit (e.g., "1.50 MiB").
 	def self.formatted_bytes(bytes)
 		return "0 B" if bytes.zero?
 		
@@ -24,6 +27,8 @@ module Memory
 		"%.2f #{UNITS[scale]}" % (bytes / 10.0**scale)
 	end
 	
+	# Aggregates memory allocations by a given metric.
+	# Groups allocations and tracks totals for memory usage and allocation counts.
 	class Aggregate
 		Total = Struct.new(:memory, :count) do
 			def initialize
@@ -51,6 +56,9 @@ module Memory
 			end
 		end
 		
+		# Initialize a new aggregate with a title and metric block.
+		# @parameter title [String] The title for this aggregate.
+		# @parameter block [Block] A block that extracts the metric from an allocation.
 		def initialize(title, &block)
 			@title = title
 			@metric = block
@@ -64,6 +72,8 @@ module Memory
 		attr :total
 		attr :totals
 		
+		# Add an allocation to this aggregate.
+		# @parameter allocation [Allocation] The allocation to add.
 		def << allocation
 			metric = @metric.call(allocation)
 			total = @totals[metric]
@@ -75,10 +85,18 @@ module Memory
 			@total.count += 1
 		end
 		
+		# Sort totals by a given key.
+		# @parameter key [Symbol] The key to sort by (e.g., :memory or :count).
+		# @returns [Array] Sorted array of [metric, total] pairs.
 		def totals_by(key)
 			@totals.sort_by{|metric, total| [total[key], metric]}
 		end
 		
+		# Print this aggregate to an IO stream.
+		# @parameter io [IO] The output stream to write to.
+		# @parameter limit [Integer] Maximum number of items to display.
+		# @parameter title [String] Optional title override.
+		# @parameter level [Integer] Markdown heading level for output.
 		def print(io = $stderr, limit: 10, title: @title, level: 2)
 			io.puts "#{'#' * level} #{title} #{@total}", nil
 			
@@ -89,6 +107,9 @@ module Memory
 			io.puts nil
 		end
 		
+		# Convert this aggregate to a JSON-compatible hash.
+		# @parameter options [Hash | Nil] Optional JSON serialization options.
+		# @returns [Hash] JSON-compatible representation.
 		def as_json(options = nil)
 			{
 				title: @title,
@@ -98,7 +119,12 @@ module Memory
 		end
 	end
 	
+	# Aggregates memory allocations by value.
+	# Groups allocations by their actual values (e.g., string contents) and creates sub-aggregates.
 	class ValueAggregate
+		# Initialize a new value aggregate.
+		# @parameter title [String] The title for this aggregate.
+		# @parameter block [Block] A block that extracts the metric from an allocation.
 		def initialize(title, &block)
 			@title = title
 			@metric = block
@@ -110,6 +136,8 @@ module Memory
 		attr :metric
 		attr :aggregates
 		
+		# Add an allocation to this value aggregate.
+		# @parameter allocation [Allocation] The allocation to add.
 		def << allocation
 			if value = allocation.value
 				aggregate = @aggregates[value]
@@ -118,10 +146,17 @@ module Memory
 			end
 		end
 		
+		# Sort aggregates by a given key.
+		# @parameter key [Symbol] The key to sort by (e.g., :memory or :count).
+		# @returns [Array] Sorted array of [value, aggregate] pairs.
 		def aggregates_by(key)
 			@aggregates.sort_by{|value, aggregate| [aggregate.total[key], value]}
 		end
 		
+		# Print this value aggregate to an IO stream.
+		# @parameter io [IO] The output stream to write to.
+		# @parameter limit [Integer] Maximum number of items to display.
+		# @parameter level [Integer] Markdown heading level for output.
 		def print(io = $stderr, limit: 10, level: 2)
 			io.puts "#{'#' * level} #{@title}", nil
 			
@@ -130,6 +165,9 @@ module Memory
 			end
 		end
 		
+		# Convert this value aggregate to a JSON-compatible hash.
+		# @parameter options [Hash | Nil] Optional JSON serialization options.
+		# @returns [Hash] JSON-compatible representation.
 		def as_json(options = nil)
 			{
 				title: @title,

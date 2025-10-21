@@ -1,12 +1,17 @@
 # frozen_string_literal: true
 
 # Released under the MIT License.
-# Copyright, 2020-2024, by Samuel Williams.
+# Copyright, 2020-2025, by Samuel Williams.
 
-require_relative 'aggregate'
+require_relative "aggregate"
 
 module Memory
+	# A report containing aggregated memory allocation statistics.
+	# Collects and organizes allocation data by various metrics.
 	class Report
+		# Create a general-purpose report with standard aggregates.
+		# @parameter options [Hash] Options to pass to the report constructor.
+		# @returns [Report] A new report with standard aggregates.
 		def self.general(**options)
 			Report.new([
 				Aggregate.new("By Gem", &:gem),
@@ -18,6 +23,9 @@ module Memory
 			], **options)
 		end
 		
+		# Initialize a new report with the given aggregates.
+		# @parameter aggregates [Array] Array of Aggregate or ValueAggregate instances.
+		# @parameter retained_only [Boolean] Whether to only include retained allocations in aggregates.
 		def initialize(aggregates, retained_only: true)
 			@retained_only = retained_only
 			
@@ -53,6 +61,8 @@ module Memory
 			end
 		end
 		
+		# Print this report to an IO stream.
+		# @parameter io [IO] The output stream to write to.
 		def print(io = $stderr)
 			if @retained_only
 				io.puts "\# Retained Memory Profile", nil
@@ -69,6 +79,9 @@ module Memory
 			end
 		end
 		
+		# Convert this report to a JSON-compatible hash.
+		# @parameter options [Hash | Nil] Optional JSON serialization options.
+		# @returns [Hash] JSON-compatible representation.
 		def as_json(options = nil)
 			{
 				total_allocated: @total_allocated.as_json(options),
@@ -77,6 +90,8 @@ module Memory
 			}
 		end
 		
+		# Convert this report to a JSON string.
+		# @returns [String] JSON representation of this report.
 		def to_json(...)
 			as_json.to_json(...)
 		end

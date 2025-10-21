@@ -8,17 +8,23 @@
 # Copyright, 2016, by Hamdi Akoğuz.
 # Copyright, 2018, by Jonas Peschla.
 # Copyright, 2020, by Jean Boussier.
-# Copyright, 2020-2022, by Samuel Williams.
+# Copyright, 2020-2025, by Samuel Williams.
 
 module Memory
+	# Cache for storing and looking up allocation metadata.
+	# Caches gem names, file locations, class names, and string values to reduce memory overhead during profiling.
 	class Cache
+		# Initialize a new cache with empty lookup tables.
 		def initialize
 			@gem_guess_cache = Hash.new
-			@location_cache = Hash.new { |h, k| h[k] = Hash.new.compare_by_identity }
+			@location_cache = Hash.new {|h, k| h[k] = Hash.new.compare_by_identity}
 			@class_name_cache = Hash.new.compare_by_identity
 			@string_cache = Hash.new
 		end
-
+		
+		# Guess the gem or library name from a file path.
+		# @parameter path [String] The file path to analyze.
+		# @returns [String] The guessed gem name, stdlib component, or "other".
 		def guess_gem(path)
 			@gem_guess_cache[path] ||=
 				if /(\/gems\/.*)*\/gems\/(?<gemname>[^\/]+)/ =~ path
@@ -33,15 +39,26 @@ module Memory
 					"other"
 				end
 		end
-
+		
+		# Look up and cache a file location string.
+		# @parameter file [String] The source file path.
+		# @parameter line [Integer] The line number.
+		# @returns [String] The formatted location string "file:line".
 		def lookup_location(file, line)
 			@location_cache[file][line] ||= "#{file}:#{line}"
 		end
-
+		
+		# Look up and cache a class name.
+		# @parameter klass [Class] The class object.
+		# @returns [String] The class name or "<<Unknown>>" if unavailable.
 		def lookup_class_name(klass)
-			@class_name_cache[klass] ||= ((klass.is_a?(Class) && klass.name) || '<<Unknown>>').to_s
+			@class_name_cache[klass] ||= ((klass.is_a?(Class) && klass.name) || "<<Unknown>>").to_s
 		end
-
+		
+		# Look up and cache a string value.
+		# Strings are truncated to 64 characters to reduce memory usage.
+		# @parameter obj [String] The string object to cache.
+		# @returns [String] A cached copy of the string (truncated to 64 characters).
 		def lookup_string(obj)
 			# This string is shortened to 200 characters which is what the string report shows
 			# The string report can still list unique strings longer than 200 characters

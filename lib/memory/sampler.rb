@@ -11,16 +11,20 @@
 # Copyright, 2018, by Jonas Peschla.
 # Copyright, 2018, by Espartaco Palma.
 # Copyright, 2020, by Jean Boussier.
-# Copyright, 2020-2024, by Samuel Williams.
+# Copyright, 2020-2025, by Samuel Williams.
 
-require 'objspace'
-require 'msgpack'
-require 'console'
+require "objspace"
+require "msgpack"
+require "console"
 
-require_relative 'cache'
+require_relative "cache"
 
 module Memory
+	# MessagePack factory wrapper for serializing allocations.
+	# Registers custom types for efficient serialization of allocation data.
 	class Wrapper < MessagePack::Factory
+		# Initialize the wrapper with a cache.
+		# @parameter cache [Cache] The cache to use for allocation metadata.
 		def initialize(cache)
 			super()
 			
@@ -61,6 +65,8 @@ module Memory
 	# end
 	# ~~~
 	class Sampler
+		# Initialize a new sampler.
+		# @parameter filter [Block | Nil] Optional filter block to select which allocations to track.
 		def initialize(&filter)
 			@filter = filter
 			
@@ -69,6 +75,8 @@ module Memory
 			@allocated = Array.new
 		end
 		
+		# Generate a human-readable representation of this sampler.
+		# @returns [String] String showing the number of allocations tracked.
 		def inspect
 			"#<#{self.class} #{@allocated.size} allocations>"
 		end
@@ -79,6 +87,8 @@ module Memory
 		attr :wrapper
 		attr :allocated
 		
+		# Start tracking memory allocations.
+		# Disables GC and begins ObjectSpace allocation tracing.
 		def start
 			GC.disable
 			3.times{GC.start}
@@ -90,6 +100,8 @@ module Memory
 			ObjectSpace.trace_object_allocations_start
 		end
 		
+		# Stop tracking allocations and determine which ones were retained.
+		# Re-enables GC and marks retained allocations.
 		def stop
 			ObjectSpace.trace_object_allocations_stop
 			allocated = track_allocations(@generation)
@@ -116,6 +128,9 @@ module Memory
 			ObjectSpace.trace_object_allocations_clear
 		end
 		
+		# Serialize allocations to MessagePack format.
+		# @parameter io [IO | Nil] Optional IO stream to write to. If nil, returns serialized data.
+		# @returns [String | Nil] Serialized data if no IO stream provided, otherwise nil.
 		def dump(io = nil)
 			Console.logger.debug(self, "Dumping allocations: #{@allocated.size}")
 			
@@ -128,6 +143,8 @@ module Memory
 			end
 		end
 		
+		# Load allocations from MessagePack-serialized data.
+		# @parameter data [String] The serialized allocation data.
 		def load(data)
 			allocations = @wrapper.load(data)
 			
@@ -136,6 +153,9 @@ module Memory
 			@allocated.concat(allocations)
 		end
 		
+		# Generate a report from the tracked allocations.
+		# @parameter options [Hash] Options to pass to the report constructor.
+		# @returns [Report] A report containing allocation statistics.
 		def report(**options)
 			report = Report.general(**options)
 			

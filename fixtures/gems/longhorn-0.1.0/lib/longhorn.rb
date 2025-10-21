@@ -6,17 +6,17 @@
 # Copyright, 2018, by Jonas Peschla.
 # Copyright, 2020-2023, by Samuel Williams.
 
-require 'set'
+require "set"
 
 module Longhorn
-  def self.run
-    result = Set.new
-    ["allocated", "retained"]
-      .product(["memory", "objects"])
-      .product(["gem", "file", "location", "class"])
-      .each do |(type, metric), name|
-        result << "#{type} #{metric} by #{name}"
-      end
-    result
-  end
+	def self.run
+		result = Set.new
+		["allocated", "retained"]
+						.product(["memory", "objects"])
+						.product(["gem", "file", "location", "class"])
+						.each do |(type, metric), name|
+							result << "#{type} #{metric} by #{name}"
+						end
+		result
+	end
 end

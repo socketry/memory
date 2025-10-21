@@ -10,8 +10,8 @@ Gem::Specification.new do |spec|
 	spec.authors = ["Sam Saffron", "Dave Gynn", "Samuel Williams", "Nick LaMuro", "Jonas Peschla", "Ashwin Maroli", "Søren Skovsbøll", "Richard Schneeman", "Anton Davydov", "Benoit Tigeot", "Jean Boussier", "Vincent Woo", "Andrew Grimm", "Boris Staal", "Danny Ben Shitrit", "Espartaco Palma", "Florian Schwab", "Hamdi Akoğuz", "Jaiden Mispy", "John Bachir", "Luís Ferreira", "Mike Subelsky", "Olle Jonsson", "Vasily Kolesnikov", "William Tabi"]
 	spec.license = "MIT"
 	
-	spec.cert_chain  = ['release.cert']
-	spec.signing_key = File.expand_path('~/.gem/release.pem')
+	spec.cert_chain  = ["release.cert"]
+	spec.signing_key = File.expand_path("~/.gem/release.pem")
 	
 	spec.homepage = "https://github.com/socketry/memory"
 	
@@ -20,9 +20,9 @@ Gem::Specification.new do |spec|
 		"source_code_uri" => "https://github.com/socketry/memory.git",
 	}
 	
-	spec.files = Dir.glob(['{bake,lib}/**/*', '*.md'], File::FNM_DOTMATCH, base: __dir__)
+	spec.files = Dir.glob(["{bake,lib}/**/*", "*.md"], File::FNM_DOTMATCH, base: __dir__)
 	
-	spec.required_ruby_version = ">= 3.1"
+	spec.required_ruby_version = ">= 3.2"
 	
 	spec.add_dependency "bake", "~> 0.15"
 	spec.add_dependency "console"

@@ -7,11 +7,11 @@
 # Copyright, 2020-2022, by Samuel Williams.
 
 def check(paths:)
-	require 'console'
+	require "console"
 	
 	total_size = paths.sum{|path| File.size(path)}
 	
-	require_relative '../../lib/memory'
+	require_relative "../../lib/memory"
 	
 	report = Memory::Report.general
 	
