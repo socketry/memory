@@ -4,7 +4,7 @@
 # Copyright, 2014, by Søren Skovsbøll.
 # Copyright, 2014-2019, by Sam Saffron.
 # Copyright, 2018, by Jonas Peschla.
-# Copyright, 2020-2023, by Samuel Williams.
+# Copyright, 2020-2025, by Samuel Williams.
 
 require "set"
 

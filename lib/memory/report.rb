@@ -90,16 +90,16 @@ module Memory
 			}
 		end
 		
-	# Convert this report to a JSON string.
-	# @returns [String] JSON representation of this report.
-	def to_json(...)
-		as_json.to_json(...)
+		# Convert this report to a JSON string.
+		# @returns [String] JSON representation of this report.
+		def to_json(...)
+			as_json.to_json(...)
+		end
+		
+		# Generate a human-readable representation of this report.
+		# @returns [String] Summary showing allocated and retained totals.
+		def inspect
+			"#<#{self.class}: #{@total_allocated} allocated, #{@total_retained} retained>"
+		end
 	end
-
-	# Generate a human-readable representation of this report.
-	# @returns [String] Summary showing allocated and retained totals.
-	def inspect
-		"#<#{self.class}: #{@total_allocated} allocated, #{@total_retained} retained>"
-	end
-end
 end

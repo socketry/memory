@@ -6,7 +6,7 @@
 def initialize(...)
 	super
 	
-	require_relative '../../lib/memory'
+	require_relative "../../lib/memory"
 end
 
 # Load a sampler from one or more .mprof files.
@@ -27,7 +27,7 @@ def load(paths:)
 	paths.each do |path|
 		Console.logger.info(sampler, "Loading #{path}, #{Memory.formatted_bytes File.size(path)}")
 		
-		File.open(path, 'r', encoding: Encoding::BINARY) do |io|
+		File.open(path, "r", encoding: Encoding::BINARY) do |io|
 			unpacker = wrapper.unpacker(io)
 			count = unpacker.read_array_header
 			
@@ -56,7 +56,7 @@ end
 # @parameter output [String] Path to write the .mprof file.
 # @returns [Memory::Sampler] The input sampler.
 def dump(path, input:)
-	File.open(path, 'w', encoding: Encoding::BINARY) do |io|
+	File.open(path, "w", encoding: Encoding::BINARY) do |io|
 		input.dump(io)
 	end
 	
@@ -76,7 +76,7 @@ def load_object_space_dump(path)
 	Console.logger.info(self, "Loading heap dump from #{path} (#{Memory.formatted_bytes(file_size)})")
 	
 	sampler = nil
-	File.open(path, 'r') do |io|
+	File.open(path, "r") do |io|
 		sampler = Memory::Sampler.load_object_space_dump(io) do |line_count, object_count|
 			# Update progress based on bytes read:
 			progress.increment(io.pos - progress.current)

@@ -5,7 +5,7 @@
 
 def initialize(...)
 	super
-
+	
 	require_relative "../../lib/memory"
 end
 
@@ -26,6 +26,6 @@ def print(input:)
 	end
 	
 	report.print($stderr)
-
+	
 	return report
 end
