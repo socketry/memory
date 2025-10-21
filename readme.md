@@ -19,30 +19,9 @@ $ bundle add 'memory'
 
 ## Usage
 
-``` ruby
-require "memory"
+Please see the [project documentation](https://socketry.github.io/memory/) for more details.
 
-report = Memory.report do
-	# run your code here
-end
-
-report.print
-```
-
-Or, you can use the `.start`/`.stop` methods as well:
-
-``` ruby
-require "memory"
-
-sampler = Memory::Sampler.new
-
-sampler.start
-# run your code here
-sampler.stop
-
-report = sampler.report
-report.print
-```
+  - [Getting Started](https://socketry.github.io/memory/guides/getting-started/index) - This guide explains how to get started with `memory`, a Ruby gem for profiling memory allocations in your applications.
 
 ### RSpec Integration
 
@@ -113,7 +92,11 @@ end
 
 ## Releases
 
-There are no documented releases.
+Please see the [project releases](https://socketry.github.io/memory/releases/index) for all releases.
+
+### v0.6.0
+
+  - Add agent context.
 
 ## Contributing
 
