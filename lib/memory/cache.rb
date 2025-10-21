@@ -50,9 +50,9 @@ module Memory
 		
 		# Look up and cache a class name.
 		# @parameter klass [Class] The class object.
-		# @returns [String] The class name or "<<Unknown>>" if unavailable.
+		# @returns [String] The class name or `unknown` if unavailable.
 		def lookup_class_name(klass)
-			@class_name_cache[klass] ||= ((klass.is_a?(Class) && klass.name) || "<<Unknown>>").to_s
+			@class_name_cache[klass] ||= ((klass.is_a?(Class) && klass.name) || "unknown").to_s
 		end
 		
 		# Look up and cache a string value.
