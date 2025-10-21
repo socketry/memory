@@ -7,5 +7,5 @@
 # Copyright, 2020-2024, by Samuel Williams.
 
 module Memory
-	VERSION = "0.6.0"
+	VERSION = "0.6.1"
 end
