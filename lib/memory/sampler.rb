@@ -15,6 +15,7 @@
 
 require "objspace"
 require "msgpack"
+require "json"
 require "console"
 
 require_relative "cache"
@@ -65,6 +66,72 @@ module Memory
 	# end
 	# ~~~
 	class Sampler
+	# Load allocations from an ObjectSpace heap dump.
+	#
+	# If a block is given, it will be called periodically with progress information.
+	#
+	# @parameter io [IO] The IO stream containing the heap dump JSON.
+	# @yields [line_count, object_count] Progress callback with current line and object counts.
+	# @returns [Sampler] A new sampler populated with allocations from the heap dump.
+	def self.load_object_space_dump(io, &block)
+		sampler = new
+		cache = sampler.cache
+		
+		line_count = 0
+		object_count = 0
+		report_interval = 10000
+		
+		io.each_line do |line|
+			line_count += 1
+			
+			begin
+				object = JSON.parse(line)
+			rescue JSON::ParserError
+				# Skip invalid JSON lines
+				next
+			end
+			
+			# Skip non-object entries (ROOT, SHAPE, etc.)
+			next unless object['address']
+			
+			# Get allocation information (may be nil if tracing wasn't enabled)
+			file = object['file'] || '(unknown)'
+			line_number = object['line'] || 0
+			
+			# Get object type/class
+			type = object['type'] || 'unknown'
+			
+			# Get memory size
+			memsize = object['memsize'] || 0
+			
+			# Get value for strings
+			value = object['value']
+			
+			allocation = Allocation.new(
+				cache,
+				type,           # class_name
+				file,           # file
+				line_number,    # line
+				memsize,        # memsize
+				value,          # value (for strings)
+				true            # retained (all objects in heap dump are live)
+			)
+			
+			sampler.allocated << allocation
+			object_count += 1
+			
+			# Report progress periodically
+			if block && (object_count % report_interval == 0)
+				block.call(line_count, object_count)
+			end
+		end
+		
+		# Final progress report
+		block.call(line_count, object_count) if block
+					
+		return sampler
+	end
+		
 		# Initialize a new sampler.
 		# @parameter filter [Block | Nil] Optional filter block to select which allocations to track.
 		def initialize(&filter)
