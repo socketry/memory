@@ -56,4 +56,39 @@ describe Memory::Report do
 			expect(report.aggregates).to have_attributes(size: be == 3)
 		end
 	end
+	
+	with "invalid UTF-8 strings" do
+		let(:value_aggregate) do
+			Memory::ValueAggregate.new("Strings By Value") {|allocation| allocation.class_name}
+		end
+		
+		it "can safely convert to JSON" do
+			# Create a cache for the allocation
+			cache = Memory::Cache.new
+			
+			# Create an invalid UTF-8 byte sequence
+			invalid_string = "\xff\xfe".dup.force_encoding("UTF-8")
+			
+			# Create an allocation with an invalid UTF-8 string value
+			allocation = Memory::Allocation.new(
+				cache,           # cache
+				"String",        # class_name
+				"test.rb",       # file
+				42,              # line
+				100,             # memsize
+				invalid_string,  # value (invalid UTF-8)
+				true             # retained
+			)
+			
+			# Add the allocation to the value aggregate
+			value_aggregate << allocation
+			
+			# This should not raise an error even with invalid UTF-8
+			result = value_aggregate.as_json
+			
+			# Verify we can convert to JSON string
+			json_string = JSON.generate(result)
+			expect(json_string).to be_a(String)
+		end
+	end
 end

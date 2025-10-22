@@ -129,7 +129,7 @@ module Memory
 			@title = title
 			@metric = block
 			
-			@aggregates = Hash.new{|h,k| h[k] = Aggregate.new(k.inspect, &@metric)}
+			@aggregates = Hash.new{|h,k| h[k] = Aggregate.new(safe_key(k.inspect), &@metric)}
 		end
 		
 		attr :title
@@ -169,10 +169,14 @@ module Memory
 		# @parameter options [Hash | Nil] Optional JSON serialization options.
 		# @returns [Hash] JSON-compatible representation.
 		def as_json(options = nil)
-			{
+			result = {
 				title: @title,
-				aggregates: @aggregates.map{|k, v| [k, v.as_json]}
+				aggregates: @aggregates.map{|k, v| [safe_key(k), v.as_json]}
 			}
+		end
+		
+		private def safe_key(key)
+			key.to_s.encode(Encoding::UTF_8, invalid: :replace, undef: :replace)
 		end
 	end
 end
