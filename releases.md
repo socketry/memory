@@ -1,6 +1,6 @@
 # Releases
 
-## Unreleased
+## v0.7.1
 
   - Ensure aggregate keys are safe for serialization (and printing).
 
