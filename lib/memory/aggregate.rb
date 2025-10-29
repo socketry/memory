@@ -36,7 +36,7 @@ module Memory
 		end
 		
 		# Sort totals by a given key.
-		# @parameter key [Symbol] The key to sort by (e.g., :memory or :count).
+		# @parameter key [Symbol] The key to sort by (e.g., :size or :count).
 		# @returns [Array] Sorted array of [metric, total] pairs.
 		def totals_by(key)
 			@totals.sort_by{|metric, total| [total[key], metric]}
@@ -50,7 +50,7 @@ module Memory
 		def print(io = $stderr, limit: 10, title: @title, level: 2)
 			io.puts "#{'#' * level} #{title} #{@total}", nil
 			
-			totals_by(:memory).last(limit).reverse_each do |metric, total|
+			totals_by(:size).last(limit).reverse_each do |metric, total|
 				io.puts "- #{total}\t#{metric}"
 			end
 			

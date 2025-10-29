@@ -40,7 +40,7 @@ describe Memory::Usage do
 				count: be == 1
 			)
 		end
-
+		
 		it "can compute size of nested objects" do
 			object = [Object.new, Object.new]
 			usage = subject.of(object)

@@ -19,9 +19,16 @@ module Memory
 		attr_accessor :size
 		
 		alias memsize size
+		alias memory size
 		
 		# @attribute count [Integer] The total count of the usage in object instances.
 		attr_accessor :count
+		
+		# Access usage attributes by key.
+		# @parameter key [Symbol] The attribute name (:size, :count, :memory, :memsize).
+		def [](key)
+			public_send(key)
+		end
 		
 		# Add an allocation to this usage.
 		# @parameter allocation [Allocation] The allocation to add.

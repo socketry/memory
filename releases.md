@@ -1,5 +1,9 @@
 # Releases
 
+## Unreleased
+
+  - Fix bugs when printing reports due to interface mismatch with `Memory::Usage`.
+
 ## v0.8.3
 
   - Handle `Memory::Usage.of(number)` without error.
