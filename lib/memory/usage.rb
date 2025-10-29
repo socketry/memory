@@ -39,12 +39,27 @@ module Memory
 			return self
 		end
 		
+		IGNORE = [
+			# Skip modules and symbols, they are usually "global":
+			Module,
+			# Note that `reachable_objects_from` does not include symbols, numbers, or other value types, AFAICT.
+			
+			Proc,
+			Method,
+			UnboundMethod,
+			Binding,
+			TracePoint,
+			
+			# We don't want to traverse into shared state:
+			Ractor,
+			Thread,
+			Fiber
+		]
+		
 		# Compute the usage of an object and all reachable objects from it.
 		# @parameter root [Object] The root object to start traversal from.
 		# @returns [Usage] The usage of the object and all reachable objects from it.
-		def self.of(root)
-			seen = Set.new.compare_by_identity
-			
+		def self.of(root, seen: Set.new.compare_by_identity, ignore: IGNORE)
 			count = 0
 			size = 0
 			
@@ -52,9 +67,8 @@ module Memory
 			while queue.any?
 				object = queue.shift
 				
-				# Skip modules and symbols, they are usually "global":
-				next if object.is_a?(Module)
-				# Note that `reachable_objects_from` does not include symbols, numbers, or other value types, AFAICT.
+				# Skip ignored types:
+				next if ignore.any?{|type| object.is_a?(type)}
 				
 				# Skip internal objects - they don't behave correctly when added to `seen` and create unbounded recursion:
 				next if object.is_a?(ObjectSpace::InternalObjectWrapper)

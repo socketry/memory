@@ -1,5 +1,9 @@
 # Releases
 
+## Unreleased
+
+  - Explicit `ignore:` and `seen:` parameters for `Memory::Usage.of` to allow customization of ignored types and tracking of seen objects.
+
 ## v0.8.4
 
   - Fix bugs when printing reports due to interface mismatch with `Memory::Usage`.
