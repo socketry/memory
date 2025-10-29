@@ -94,6 +94,11 @@ end
 
 Please see the [project releases](https://socketry.github.io/memory/releases/index) for all releases.
 
+### v0.8.0
+
+  - Removed old `RSpec` integration.
+  - Introduced `Memory::Usage` and `Memory::Usage.of(object)` which recursively computes memory usage of an object and its contents.
+
 ### v0.7.1
 
   - Ensure aggregate keys are safe for serialization (and printing).
