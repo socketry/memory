@@ -1,5 +1,9 @@
 # Releases
 
+## Unreleased
+
+  - Skip over `ObjectSpace::InternalObjectWrapper` instances in `Memory::Usage.of` to avoid unbounded recursion.
+
 ## v0.8.0
 
   - Removed old `RSpec` integration.

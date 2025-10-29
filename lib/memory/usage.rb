@@ -44,9 +44,13 @@ module Memory
 			queue = [root]
 			while queue.any?
 				object = queue.shift
+				
 				# Skip modules and symbols, they are usually "global":
 				next if object.is_a?(Module)
 				# Note that `reachable_objects_from` does not include symbols, numbers, or other value types, AFAICT.
+				
+				# Skip internal objects - they don't behave correctly when added to `seen` and create unbounded recursion:
+				next if object.is_a?(ObjectSpace::InternalObjectWrapper)
 				
 				# Skip objects we have already seen:
 				next if seen.include?(object)

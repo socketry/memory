@@ -130,5 +130,14 @@ describe Memory::Usage do
 				size: be > 100  # Should be larger than the string content
 			)
 		end
+		
+		it "can compute usage of proc" do
+			proc = Proc.new{|x| x * 2}
+			usage = subject.of(proc)
+			expect(usage).to have_attributes(
+				count: be > 1,
+				size: be > 0
+			)
+		end
 	end
 end
