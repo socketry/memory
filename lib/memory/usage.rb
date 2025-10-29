@@ -79,7 +79,7 @@ module Memory
 		end
 		
 		def to_s
-			"(#{Memory.formatted_bytes(memory)} in #{count} allocations)"
+			"(#{Memory.formatted_bytes(@size)} in #{@count} allocations)"
 		end
 	end
 end

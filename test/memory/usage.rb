@@ -140,4 +140,36 @@ describe Memory::Usage do
 			)
 		end
 	end
+	
+	with "#to_s" do
+		it "produces a human-readable string" do
+			usage = subject.new(2048, 5)
+			expect(usage.to_s).to be == "(2.00 KiB in 5 allocations)"
+		end
+	end
+	
+	with "#as_json" do
+		it "produces a hash representation" do
+			usage = subject.new(4096, 10)
+			json_data = usage.as_json
+			
+			expect(json_data).to have_keys(
+				size: be == 4096,
+				count: be == 10
+			)
+		end
+	end
+	
+	with "#to_json" do
+		it "produces a JSON string" do
+			usage = subject.new(8192, 20)
+			json_string = usage.to_json
+			
+			expect(json_string).to be_a(String)
+			expect(JSON.parse(json_string)).to have_keys(
+				"size" => be == 8192,
+				"count" => be == 20
+			)
+		end
+	end
 end

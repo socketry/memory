@@ -4,17 +4,7 @@
 # Copyright, 2025, by Samuel Williams.
 
 module Memory
-	UNITS = {
-		0 => "B",
-		3 => "KiB",
-		6 => "MiB",
-		9 => "GiB",
-		12 => "TiB",
-		15 => "PiB",
-		18 => "EiB",
-		21 => "ZiB",
-		24 => "YiB"
-	}.freeze
+	UNITS = ["B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB"].freeze
 	
 	# Format bytes into human-readable units.
 	# @parameter bytes [Integer] The number of bytes to format.
@@ -22,8 +12,12 @@ module Memory
 	def self.formatted_bytes(bytes)
 		return "0 B" if bytes.zero?
 		
-		scale = Math.log2(bytes).div(10) * 3
-		scale = 24 if scale > 24
-		"%.2f #{UNITS[scale]}" % (bytes / 10.0**scale)
+		# Calculate how many times we can divide by 1024 (2^10)
+		# log2(bytes) / 10 gives the number of 1024 divisions
+		index = Math.log2(bytes).to_i / 10
+		index = 8 if index > 8  # Cap at YiB
+		
+		# Divide by 1024^index, which equals 2^(index * 10)
+		"%.2f #{UNITS[index]}" % (bytes / (1024.0 ** index))
 	end
 end
