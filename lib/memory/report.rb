@@ -29,8 +29,8 @@ module Memory
 		def initialize(aggregates, retained_only: true)
 			@retained_only = retained_only
 			
-			@total_allocated = Aggregate::Total.new
-			@total_retained = Aggregate::Total.new
+			@total_allocated = Usage.new
+			@total_retained = Usage.new
 			
 			@aggregates = aggregates
 		end

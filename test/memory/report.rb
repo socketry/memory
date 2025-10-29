@@ -27,12 +27,12 @@ describe Memory::Report do
 		)
 		
 		expect(result[:total_allocated]).to have_keys(
-			memory: be_a(Integer),
+			size: be_a(Integer),
 			count: be_a(Integer),
 		)
 		
 		expect(result[:total_retained]).to have_keys(
-			memory: be_a(Integer),
+			size: be_a(Integer),
 			count: be_a(Integer),
 		)
 		

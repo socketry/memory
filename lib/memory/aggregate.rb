@@ -3,59 +3,12 @@
 # Released under the MIT License.
 # Copyright, 2020-2025, by Samuel Williams.
 
+require_relative "usage"
+
 module Memory
-	UNITS = {
-		0 => "B",
-		3 => "KiB",
-		6 => "MiB",
-		9 => "GiB",
-		12 => "TiB",
-		15 => "PiB",
-		18 => "EiB",
-		21 => "ZiB",
-		24 => "YiB"
-	}.freeze
-	
-	# Format bytes into human-readable units.
-	# @parameter bytes [Integer] The number of bytes to format.
-	# @returns [String] Formatted string with appropriate unit (e.g., "1.50 MiB").
-	def self.formatted_bytes(bytes)
-		return "0 B" if bytes.zero?
-		
-		scale = Math.log2(bytes).div(10) * 3
-		scale = 24 if scale > 24
-		"%.2f #{UNITS[scale]}" % (bytes / 10.0**scale)
-	end
-	
 	# Aggregates memory allocations by a given metric.
 	# Groups allocations and tracks totals for memory usage and allocation counts.
 	class Aggregate
-		Total = Struct.new(:memory, :count) do
-			def initialize
-				super(0, 0)
-			end
-			
-			def << allocation
-				self.memory += allocation.memsize
-				self.count += 1
-			end
-			
-			def formatted_memory
-				self.memory
-			end
-			
-			def to_s
-				"(#{Memory.formatted_bytes memory} in #{count} allocations)"
-			end
-			
-			def as_json(options = nil)
-				{
-					memory: memory,
-					count: count
-				}
-			end
-		end
-		
 		# Initialize a new aggregate with a title and metric block.
 		# @parameter title [String] The title for this aggregate.
 		# @parameter block [Block] A block that extracts the metric from an allocation.
@@ -63,8 +16,8 @@ module Memory
 			@title = title
 			@metric = block
 			
-			@total = Total.new
-			@totals = Hash.new{|h,k| h[k] = Total.new}
+			@total = Usage.new
+			@totals = Hash.new{|h,k| h[k] = Usage.new}
 		end
 		
 		attr :title
@@ -78,11 +31,8 @@ module Memory
 			metric = @metric.call(allocation)
 			total = @totals[metric]
 			
-			total.memory += allocation.memsize
-			total.count += 1
-			
-			@total.memory += allocation.memsize
-			@total.count += 1
+			total << allocation
+			@total << allocation
 		end
 		
 		# Sort totals by a given key.

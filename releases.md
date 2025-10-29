@@ -1,5 +1,10 @@
 # Releases
 
+## Unreleased
+
+  - Removed old `RSpec` integration.
+  - Introduced `Memory::Usage` and `Memory::Usage.of(object)` which recursively computes memory usage of an object and its contents.
+
 ## v0.7.1
 
   - Ensure aggregate keys are safe for serialization (and printing).
