@@ -61,7 +61,9 @@ module Memory
 				size += ObjectSpace.memsize_of(object)
 				
 				# Add the object's reachable objects to the queue:
-				queue.concat(ObjectSpace.reachable_objects_from(object))
+				if reachable_objects = ObjectSpace.reachable_objects_from(object)
+					queue.concat(reachable_objects)
+				end
 			end
 			
 			return new(size, count)

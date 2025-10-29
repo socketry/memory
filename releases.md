@@ -1,5 +1,9 @@
 # Releases
 
+## Unreleased
+
+  - Handle `Memory::Usage.of(number)` without error.
+
 ## v0.8.2
 
   - Fix several formatting issues.

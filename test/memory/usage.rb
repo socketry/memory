@@ -4,6 +4,7 @@
 # Copyright, 2022-2025, by Samuel Williams.
 
 require "memory/usage"
+require "json"
 
 describe Memory::Usage do
 	let(:usage) {subject.new}
@@ -137,6 +138,22 @@ describe Memory::Usage do
 			expect(usage).to have_attributes(
 				count: be > 1,
 				size: be > 0
+			)
+		end
+		
+		it "can compute usage of nil" do
+			usage = subject.of(nil)
+			expect(usage).to have_attributes(
+				count: be == 0,
+				size: be == 0
+			)
+		end
+		
+		it "can compute usage of numbers" do
+			usage = subject.of(42)
+			expect(usage).to have_attributes(
+				count: be == 1,
+				size: be == 0
 			)
 		end
 	end
