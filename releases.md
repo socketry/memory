@@ -1,6 +1,6 @@
 # Releases
 
-## Unreleased
+## v0.9.0
 
   - Explicit `ignore:` and `seen:` parameters for `Memory::Usage.of` to allow customization of ignored types and tracking of seen objects.
 
