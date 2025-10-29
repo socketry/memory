@@ -1,6 +1,6 @@
 # Releases
 
-## Unreleased
+## v0.8.4
 
   - Fix bugs when printing reports due to interface mismatch with `Memory::Usage`.
 
