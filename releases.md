@@ -1,6 +1,6 @@
 # Releases
 
-## Unreleased
+## v0.8.3
 
   - Handle `Memory::Usage.of(number)` without error.
 
