@@ -1,6 +1,6 @@
 # Releases
 
-## Unreleased
+## v0.8.1
 
   - Skip over `ObjectSpace::InternalObjectWrapper` instances in `Memory::Usage.of` to avoid unbounded recursion.
 

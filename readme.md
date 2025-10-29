@@ -94,6 +94,10 @@ end
 
 Please see the [project releases](https://socketry.github.io/memory/releases/index) for all releases.
 
+### v0.8.1
+
+  - Skip over `ObjectSpace::InternalObjectWrapper` instances in `Memory::Usage.of` to avoid unbounded recursion.
+
 ### v0.8.0
 
   - Removed old `RSpec` integration.
