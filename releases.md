@@ -1,6 +1,6 @@
 # Releases
 
-## Unreleased
+## v0.8.2
 
   - Fix several formatting issues.
 

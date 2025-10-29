@@ -94,6 +94,10 @@ end
 
 Please see the [project releases](https://socketry.github.io/memory/releases/index) for all releases.
 
+### v0.8.2
+
+  - Fix several formatting issues.
+
 ### v0.8.1
 
   - Skip over `ObjectSpace::InternalObjectWrapper` instances in `Memory::Usage.of` to avoid unbounded recursion.
