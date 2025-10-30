@@ -102,96 +102,118 @@ describe Memory::Graph do
 			end
 		end
 		
-		with "#as_json" do
-			it "produces a hash representation" do
-				obj = Object.new
-				node = Memory::Graph.for(obj)
-				json_data = node.as_json
-				
-				expect(json_data).to have_keys(
-					path: be_a(String),
-					object: be_a(Hash),
-					usage: be_a(Hash),
-					total_usage: be_a(Hash),
-					children: be_nil
-				)
-				
-				expect(json_data[:object]).to have_keys(
-					class: be == "Object",
-					object_id: be == obj.object_id
-				)
-			end
+	with "#as_json" do
+		it "produces minimal representation for leaf nodes" do
+			obj = Object.new
+			node = Memory::Graph.for(obj, depth: 0)
+			json_data = node.as_json
 			
-			it "includes usage information" do
-				obj = Object.new
-				node = Memory::Graph.for(obj)
-				json_data = node.as_json
-				
-				expect(json_data[:usage]).to have_keys(
-					size: be > 0,
-					count: be == 1
-				)
-				
-				expect(json_data[:total_usage]).to have_keys(
-					size: be > 0,
-					count: be == 1
-				)
-			end
+			# Leaf nodes only have path, object, and usage
+			expect(json_data).to have_keys(
+				path: be_a(String),
+				object: be_a(Hash),
+				usage: be_a(Hash)
+			)
 			
-			it "recursively serializes children" do
-				root = [Object.new, Object.new]
-				node = Memory::Graph.for(root)
-				json_data = node.as_json
-				
-				expect(json_data[:children].size).to be == 2
-				expect(json_data[:children]).to have_keys(
-					"[0]" => be_a(Hash),
-					"[1]" => be_a(Hash)
-				)
-				
-				# Each child should have the same structure
-				child = json_data[:children]["[0]"]
-				expect(child).to have_keys(
-					path: be_a(String),
-					object: be_a(Hash),
-					usage: be_a(Hash),
-					total_usage: be_a(Hash),
-					children: be_nil
-				)
-			end
+			# Should NOT have total_usage or children
+			expect(json_data).not.to be(:key?, :total_usage)
+			expect(json_data).not.to be(:key?, :children)
+			
+			expect(json_data[:object]).to have_keys(
+				class: be == "Object",
+				object_id: be == obj.object_id
+			)
 		end
 		
-		with "#to_json" do
-			it "produces a JSON string" do
-				obj = Object.new
-				node = Memory::Graph.for(obj)
-				json_string = node.to_json
-				
-				expect(json_string).to be_a(String)
-				
-				parsed = JSON.parse(json_string)
-				expect(parsed).to have_keys(
-					"path" => be_a(String),
-					"object" => be_a(Hash),
-					"usage" => be_a(Hash),
-					"total_usage" => be_a(Hash),
-					"children" => be_nil
-				)
-			end
+		it "includes total_usage and children for internal nodes" do
+			root = [Object.new]
+			node = Memory::Graph.for(root)
+			json_data = node.as_json
 			
-			it "round-trips through JSON" do
-				root = [Object.new]
-				node = Memory::Graph.for(root)
-				
-				json_string = node.to_json
-				parsed = JSON.parse(json_string)
-				
-				expect(parsed["usage"]["count"]).to be == 1
-				expect(parsed["total_usage"]["count"]).to be == 2
-				expect(parsed["children"].size).to be == 1
-				expect(parsed["children"]["[0]"]).to be_a(Hash)
-			end
+			# Internal nodes have all fields
+			expect(json_data).to have_keys(
+				path: be_a(String),
+				object: be_a(Hash),
+				usage: be_a(Hash),
+				total_usage: be_a(Hash),
+				children: be_a(Hash)
+			)
+			
+			expect(json_data[:usage]).to have_keys(
+				size: be > 0,
+				count: be == 1
+			)
+			
+			expect(json_data[:total_usage]).to have_keys(
+				size: be > 0,
+				count: be == 2  # root + child
+			)
 		end
+		
+		it "recursively serializes children as hash" do
+			root = [Object.new, Object.new]
+			node = Memory::Graph.for(root)
+			json_data = node.as_json
+			
+			expect(json_data[:children].size).to be == 2
+			expect(json_data[:children]).to have_keys(
+				"[0]" => be_a(Hash),
+				"[1]" => be_a(Hash)
+			)
+			
+			# Child nodes are leaves, so minimal representation
+			child = json_data[:children]["[0]"]
+			expect(child).to have_keys(
+				path: be_a(String),
+				object: be_a(Hash),
+				usage: be_a(Hash)
+			)
+			
+			# Children should NOT have total_usage or children fields
+			expect(child).not.to be(:key?, :total_usage)
+			expect(child).not.to be(:key?, :children)
+		end
+	end
+		
+	with "#to_json" do
+		it "produces minimal JSON for leaf nodes" do
+			obj = Object.new
+			node = Memory::Graph.for(obj, depth: 0)
+			json_string = node.to_json
+			
+			expect(json_string).to be_a(String)
+			
+			parsed = JSON.parse(json_string)
+			expect(parsed).to have_keys(
+				"path" => be_a(String),
+				"object" => be_a(Hash),
+				"usage" => be_a(Hash)
+			)
+			
+			# Should NOT have total_usage or children
+			expect(parsed).not.to be(:key?, "total_usage")
+			expect(parsed).not.to be(:key?, "children")
+		end
+		
+		it "round-trips through JSON with full structure" do
+			root = [Object.new]
+			node = Memory::Graph.for(root)
+			
+			json_string = node.to_json
+			parsed = JSON.parse(json_string)
+			
+			# Root has children, so has all fields
+			expect(parsed["usage"]["count"]).to be == 1
+			expect(parsed["total_usage"]["count"]).to be == 2
+			expect(parsed["children"].size).to be == 1
+			expect(parsed["children"]["[0]"]).to be_a(Hash)
+			
+			# Child is a leaf, so no total_usage/children
+			child = parsed["children"]["[0]"]
+			expect(child).not.to be(:key?, "total_usage")
+			expect(child).not.to be(:key?, "children")
+		end
+	end
 	end
 	
 	with ".for" do

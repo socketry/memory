@@ -151,16 +151,21 @@ module Memory
 			# @parameter options [Hash] Options for JSON serialization.
 			# @returns [Hash] A hash representation of this node.
 			def as_json(*)
-				{
+				json = {
 					path: path,
 						object: {
 							class: @object.class.name,
 							object_id: @object.object_id
 						},
 						usage: @usage.as_json,
-						total_usage: total_usage.as_json,
-						children: @children&.transform_values(&:as_json)
 				}
+
+				if @children&.any?
+					json[:total_usage] = total_usage.as_json
+					json[:children] = @children.transform_values(&:as_json)
+				end
+
+				return json
 			end
 			
 			# Convert this node to a JSON string.
