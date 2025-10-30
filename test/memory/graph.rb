@@ -7,263 +7,334 @@ require "memory/graph"
 require "memory/usage"
 
 describe Memory::Graph do
-	let(:graph) {subject.new}
-	
-	with "#[]= and #[]" do
-		it "stores parent-child relationships" do
-			parent = Object.new
-			child = Object.new
+	with "Memory::Graph::Node" do
+	with "#initialize" do
+		it "creates a node for an object" do
+			obj = Object.new
+			node = Memory::Graph::Node.new(obj)
 			
-			graph[child] = parent
-			
-			expect(graph[child]).to be == parent
+			expect(node.object).to be == obj
+			expect(node.children).to be_nil
 		end
 		
-		it "returns nil for unknown objects" do
-			object = Object.new
-			expect(graph[object]).to be_nil
+	it "can set reference from parent" do
+		parent = [Object.new]
+		child_obj = parent[0]
+		parent_node = Memory::Graph::Node.new(parent)
+		child_node = Memory::Graph::Node.new(child_obj, Memory::Usage.new, parent_node)
+		
+		expect(child_node.reference).to be == "[0]"
+	end
+	end
+		
+	with "#total_usage" do
+		it "returns usage for node without children" do
+			node = Memory::Graph::Node.new(Object.new, Memory::Usage.new(100, 1))
+			
+			total = node.total_usage
+			expect(total.size).to be == 100
+			expect(total.count).to be == 1
 		end
 		
-		it "uses object identity" do
-			parent = Object.new
-			child1 = +"test"
-			child2 = +"test"
+		it "sums usage from children" do
+			root_node = Memory::Graph::Node.new(Object.new, Memory::Usage.new(100, 1))
 			
-			graph[child1] = parent
+			child1 = Memory::Graph::Node.new(Object.new, Memory::Usage.new(50, 1), root_node, reference: "child1")
+			child2 = Memory::Graph::Node.new(Object.new, Memory::Usage.new(75, 1), root_node, reference: "child2")
 			
-			expect(graph[child1]).to be == parent
-			expect(graph[child2]).to be_nil
+			root_node.add(child1)
+			root_node.add(child2)
+			
+			total = root_node.total_usage
+			expect(total.size).to be == 225  # 100 + 50 + 75
+			expect(total.count).to be == 3   # 1 + 1 + 1
+		end
+		
+		it "recursively sums nested children" do
+			root = Memory::Graph::Node.new(Object.new, Memory::Usage.new(100, 1))
+			child = Memory::Graph::Node.new(Object.new, Memory::Usage.new(50, 1), root, reference: "child")
+			grandchild = Memory::Graph::Node.new(Object.new, Memory::Usage.new(25, 1), child, reference: "grandchild")
+			
+			child.add(grandchild)
+			root.add(child)
+			
+			total = root.total_usage
+			expect(total.size).to be == 175  # 100 + 50 + 25
+			expect(total.count).to be == 3   # 1 + 1 + 1
 		end
 	end
-	
-	with "#key?" do
-		it "returns true for tracked objects" do
-			parent = Object.new
-			child = Object.new
-			graph[child] = parent
-			
-			expect(graph).to be(:key?, child)
-		end
 		
-		it "returns false for untracked objects" do
-			object = Object.new
-			expect(graph).not.to be(:key?, object)
-		end
-	end
-	
-	with "#find_reference" do
-		it "finds instance variable references" do
-			parent = Object.new
-			child = Object.new
-			parent.instance_variable_set(:@data, child)
-			
-			reference = graph.find_reference(parent, child)
-			expect(reference).to be == "@data"
-		end
-		
-		it "finds array element references by index" do
-			child1 = Object.new
-			child2 = Object.new
-			parent = [child1, child2]
-			
-			expect(graph.find_reference(parent, child1)).to be == "[0]"
-			expect(graph.find_reference(parent, child2)).to be == "[1]"
-		end
-		
-		it "finds hash value references" do
-			child = Object.new
-			parent = {key: child, other: "value"}
-			
-			reference = graph.find_reference(parent, child)
-			expect(reference).to be == "[:key]"
-		end
-		
-		it "finds hash key references" do
-			key_object = Object.new
-			parent = {key_object => "value"}
-			
-			reference = graph.find_reference(parent, key_object)
-			expect(reference).to be =~ /^\(key:/
-		end
-		
-		it "finds struct member references" do
-			point_struct = Struct.new(:x, :y)
-			child = Object.new
-			parent = point_struct.new(10, child)
-			
-			reference = graph.find_reference(parent, child)
-			expect(reference).to be == ".y"
-		end
-		
-		it "returns nil when reference cannot be found" do
-			parent = Object.new
-			child = Object.new
-			
-			reference = graph.find_reference(parent, child)
-			expect(reference).to be_nil
-		end
-	end
-	
-	with "#path_to" do
-		it "returns array of objects from root to target" do
-			grandchild = Object.new
-			child = Object.new
-			root = Object.new
-			
-			graph[child] = root
-			graph[grandchild] = child
-			
-			path = graph.path_to(grandchild, root)
-			
-			expect(path).to be == [root, child, grandchild]
-		end
-		
-		it "traces to any root when root parameter is nil" do
-			grandchild = Object.new
-			child = Object.new
-			root = Object.new
-			
-			graph[child] = root
-			graph[grandchild] = child
-			
-			path = graph.path_to(grandchild)
-			
-			expect(path).to be == [root, child, grandchild]
-		end
-		
-		it "returns single element for root object" do
-			root = Object.new
-			path = graph.path_to(root)
-			
-			expect(path).to be == [root]
-		end
-		
-		it "stops at specified root" do
-			obj4 = Object.new
-			obj3 = Object.new
-			obj2 = Object.new
-			obj1 = Object.new
-			
-			graph[obj2] = obj1
-			graph[obj3] = obj2
-			graph[obj4] = obj3
-			
-			path = graph.path_to(obj4, obj2)
-			
-			expect(path).to be == [obj2, obj3, obj4]
-		end
-	end
-	
-	with "#path" do
-		it "formats path with instance variables" do
-			child = Object.new
-			root = Object.new
-			root.instance_variable_set(:@data, child)
-			
-			Memory::Usage.of(root, via: graph)
-			
-			path = graph.path(child, root)
-			expect(path).to be =~ /@data$/
-		end
-		
-		it "formats path with array indices" do
-			child = Object.new
-			root = [child]
-			
-			Memory::Usage.of(root, via: graph)
-			
-			path = graph.path(child, root)
-			expect(path).to be =~ /\[0\]$/
-		end
-		
-		it "formats path with hash keys" do
-			child = Object.new
-			root = {key: child}
-			
-			Memory::Usage.of(root, via: graph)
-			
-			path = graph.path(child, root)
-			expect(path).to be =~ /\[:key\]$/
-		end
-		
-		it "formats path with struct members" do
-			point_struct = Struct.new(:x, :y)
-			child = Object.new
-			root = point_struct.new(10, child)
-			
-			Memory::Usage.of(root, via: graph)
-			
-			path = graph.path(child, root)
-			expect(path).to be =~ /\.y$/
-		end
-		
-		it "formats complex nested paths" do
-			target = Object.new
-			array = [target]
-			hash = {items: array}
-			root = Object.new
-			root.instance_variable_set(:@data, hash)
-			
-			Memory::Usage.of(root, via: graph)
-			
-			path = graph.path(target, root)
-			expect(path).to be =~ /@data\[:items\]\[0\]$/
-		end
-		
-		it "uses <??> for unknown reference types" do
-			# Create a custom object that holds references in a non-standard way
-			# Actually, even nested structures can be found with instance variables and array indices
-			custom = Class.new do
-				def initialize(obj)
-					@hidden = [obj]  # This can be found: @hidden then [0]
-				end
+		with "#path" do
+			it "returns cached path string" do
+				root = [Object.new]
+				node = Memory::Graph.for(root)
+				
+				# First call computes and caches:
+				path1 = node.path
+				expect(path1).to be_a(String)
+				expect(path1).to be =~ /^#<Array:/
+				
+				# Second call returns cached value:
+				path2 = node.path
+				expect(path2).to be == path1
+				expect(path2.object_id).to be == path1.object_id  # Same string object
 			end
 			
-			child = Object.new
-			parent = custom.new(child)
-			root = [parent]
+			it "works for child nodes" do
+				root = [Object.new]
+				node = Memory::Graph.for(root)
+				
+				child = node.children["[0]"]
+				path = child.path
+				
+				expect(path).to be_a(String)
+				expect(path).to be =~ /\[0\]$/
+			end
 			
-			Memory::Usage.of(root, via: graph)
-			
-			path = graph.path(child, root)
-			# All references should be found: root[0] -> parent@hidden -> array[0] -> child
-			expect(path).to be(:include?, "@hidden")
-			expect(path).to be(:include?, "[0]")
+			it "works even without graph instance" do
+				obj = Object.new
+				node = Memory::Graph::Node.new(obj)
+				
+				# Should still be able to format path (just shows the object)
+				path = node.path
+				expect(path).to be_a(String)
+				expect(path).to be =~ /^#<Object:/
+			end
 		end
 		
-		it "works without specifying root" do
-			child = Object.new
-			root = [child]
+		with "#as_json" do
+			it "produces a hash representation" do
+				obj = Object.new
+				node = Memory::Graph.for(obj)
+				json_data = node.as_json
+				
+				expect(json_data).to have_keys(
+					path: be_a(String),
+					object: be_a(Hash),
+					usage: be_a(Hash),
+					total_usage: be_a(Hash),
+					children: be_nil
+				)
+				
+				expect(json_data[:object]).to have_keys(
+					class: be == "Object",
+					object_id: be == obj.object_id
+				)
+			end
 			
-			Memory::Usage.of(root, via: graph)
+			it "includes usage information" do
+				obj = Object.new
+				node = Memory::Graph.for(obj)
+				json_data = node.as_json
+				
+				expect(json_data[:usage]).to have_keys(
+					size: be > 0,
+					count: be == 1
+				)
+				
+				expect(json_data[:total_usage]).to have_keys(
+					size: be > 0,
+					count: be == 1
+				)
+			end
 			
-			path = graph.path(child)
-			expect(path).to be =~ /\[0\]$/
+			it "recursively serializes children" do
+				root = [Object.new, Object.new]
+				node = Memory::Graph.for(root)
+				json_data = node.as_json
+				
+				expect(json_data[:children].size).to be == 2
+				expect(json_data[:children]).to have_keys(
+					"[0]" => be_a(Hash),
+					"[1]" => be_a(Hash)
+				)
+				
+				# Each child should have the same structure
+				child = json_data[:children]["[0]"]
+				expect(child).to have_keys(
+					path: be_a(String),
+					object: be_a(Hash),
+					usage: be_a(Hash),
+					total_usage: be_a(Hash),
+					children: be_nil
+				)
+			end
+		end
+		
+		with "#to_json" do
+			it "produces a JSON string" do
+				obj = Object.new
+				node = Memory::Graph.for(obj)
+				json_string = node.to_json
+				
+				expect(json_string).to be_a(String)
+				
+				parsed = JSON.parse(json_string)
+				expect(parsed).to have_keys(
+					"path" => be_a(String),
+					"object" => be_a(Hash),
+					"usage" => be_a(Hash),
+					"total_usage" => be_a(Hash),
+					"children" => be_nil
+				)
+			end
+			
+			it "round-trips through JSON" do
+				root = [Object.new]
+				node = Memory::Graph.for(root)
+				
+				json_string = node.to_json
+				parsed = JSON.parse(json_string)
+				
+				expect(parsed["usage"]["count"]).to be == 1
+				expect(parsed["total_usage"]["count"]).to be == 2
+				expect(parsed["children"].size).to be == 1
+				expect(parsed["children"]["[0]"]).to be_a(Hash)
+			end
 		end
 	end
 	
-	with "integration with Memory::Usage.of" do
-		it "tracks object graph during traversal" do
-			obj1 = Object.new
-			obj2 = Object.new
-			root = [obj1, obj2]
+	with ".for" do
+		it "creates a node for a simple object" do
+			obj = Object.new
+			node = Memory::Graph.for(obj)
 			
-			Memory::Usage.of(root, via: graph)
-			
-			expect(graph[obj1]).to be == root
-			expect(graph[obj2]).to be == root
+			expect(node.object).to be == obj
+			expect(node.usage).to be_a(Memory::Usage)
+			expect(node.usage.count).to be == 1
 		end
 		
-		it "works with nested structures" do
-			inner = Object.new
-			middle = [inner]
-			root = {data: middle}
+		it "creates child nodes for reachable objects" do
+			root = [Object.new, Object.new]
+			node = Memory::Graph.for(root)
 			
-			Memory::Usage.of(root, via: graph)
-			
-			expect(graph[middle]).to be == root
-			expect(graph[inner]).to be == middle
+			expect(node.object).to be == root
+			expect(node.children.size).to be == 2
+			expect(node.children["[0]"].object).to be == root[0]
+			expect(node.children["[1]"].object).to be == root[1]
 		end
+		
+	it "respects depth parameter" do
+		# Create nested structure: root -> array -> inner array -> object
+		obj = Object.new
+		inner = [obj]
+		outer = [inner]
+		root = [outer]
+		
+		# Depth 0: only root
+		node = Memory::Graph.for(root, depth: 0)
+		expect(node.children).to be_nil
+		
+		# Depth 1: root + outer
+		node = Memory::Graph.for(root, depth: 1)
+		expect(node.children.size).to be == 1
+		expect(node.children["[0]"].children).to be_nil
+		
+		# Depth 2: root + outer + inner
+		node = Memory::Graph.for(root, depth: 2)
+		expect(node.children.size).to be == 1
+		expect(node.children["[0]"].children.size).to be == 1
+		expect(node.children["[0]"].children["[0]"].children).to be_nil
+	end
+		
+		it "computes usage at each node" do
+			root = [Object.new]
+			node = Memory::Graph.for(root)
+			
+			# Root should have usage
+			expect(node.usage).to be_a(Memory::Usage)
+			expect(node.usage.size).to be > 0
+			
+			# Child should have usage
+			expect(node.children["[0]"].usage).to be_a(Memory::Usage)
+			expect(node.children["[0]"].usage.size).to be > 0
+		end
+		
+	it "prevents circular reference loops" do
+		array = []
+		array << array  # Circular reference
+		
+		node = Memory::Graph.for(array)
+		
+		# Should not infinite loop, should have one node with no children
+		expect(node.object).to be == array
+		expect(node.children).to be_nil
+	end
+		
+		it "handles shared objects" do
+			shared = Object.new
+			array = [shared, shared]
+			
+			node = Memory::Graph.for(array)
+			
+			# Should only create one node for shared object (first reference wins)
+			expect(node.children.size).to be == 1
+			expect(node.children["[0]"].object).to be == shared
+		end
+		
+		it "computes correct total_usage" do
+			root = [Object.new, Object.new]
+			node = Memory::Graph.for(root)
+			
+			total = node.total_usage
+			
+			# Total should include root + 2 children
+			expect(total.count).to be == 3
+			expect(total.size).to be > node.usage.size
+		end
+		
+	it "accumulates total usage at leaf nodes when depth is limited" do
+		# Create nested structure with known objects at each level
+		obj3 = Object.new
+		obj2 = Object.new
+		level2 = [obj2, obj3]  # 1 array + 2 objects = 3 objects
+		obj1 = Object.new
+		level1 = [obj1, level2]  # 1 array + 1 object + level2 subtree
+		root = [level1]
+		
+		# Build with depth=1: root can see level1, but level1's children become leaf nodes
+		node = Memory::Graph.for(root, depth: 1)
+		
+		# Root should have one child (level1)
+		expect(node.children.size).to be == 1
+		level1_node = node.children["[0]"]
+		
+		# level1 should have no children (depth limit reached)
+		expect(level1_node.children).to be_nil
+		
+		# But level1's usage should include ALL its descendants
+		# level1 array + obj1 + level2 array + obj2 + obj3 = 5 objects total
+		expect(level1_node.usage.count).to be == 5
+		
+		# Compare with unlimited depth to verify
+		unlimited = Memory::Graph.for(root)
+		level1_unlimited = unlimited.children["[0]"]
+		
+		# With unlimited depth, level1's total_usage should equal depth-limited usage
+		expect(level1_node.usage.count).to be == level1_unlimited.total_usage.count
+	end
+	
+	it "leaf nodes at depth limit contain their full subtree usage" do
+		# Nested: root -> child -> grandchild -> great-grandchild
+		great = Object.new
+		grand = [great]
+		child = [grand]
+		root = [child]
+		
+		# Depth 1: root can see child, but child becomes a leaf with accumulated usage
+		node = Memory::Graph.for(root, depth: 1)
+		
+		child_node = node.children["[0]"]
+		
+		# Child has no children (depth limit)
+		expect(child_node.children).to be_nil
+		
+		# But child's usage includes: child array + grand array + great object = 3 objects
+		expect(child_node.usage.count).to be == 3
+		
+		# Total for root should be root + child's accumulated subtree
+		expect(node.total_usage.count).to be == 4  # root + 3 from child subtree
+	end
 	end
 end
 

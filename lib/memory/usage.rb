@@ -39,6 +39,15 @@ module Memory
 			return self
 		end
 		
+		# Add another usage to this usage.
+		# @parameter other [Usage] The usage to add.
+		def add!(other)
+			self.size += other.size
+			self.count += other.count
+			
+			return self
+		end
+		
 		IGNORE = [
 			# Skip modules and symbols, they are usually "global":
 			Module,
@@ -62,9 +71,8 @@ module Memory
 		#
 		# @parameter root [Object] The root object to start traversal from.
 		# @parameter seen [Hash(Object, Integer)] The seen objects (should be compare_by_identity).
-		# @parameter via [Hash(Object, Object) | Nil] The traversal path. The key object was seen via the value object.
 		# @returns [Usage] The usage of the object and all reachable objects from it.
-		def self.of(root, seen: Set.new.compare_by_identity, ignore: IGNORE, via: nil)
+		def self.of(root, seen: Set.new.compare_by_identity, ignore: IGNORE)
 			count = 0
 			size = 0
 			
@@ -87,10 +95,6 @@ module Memory
 					
 					# Skip objects we have already seen:
 					next if seen.include?(reachable_object)
-					
-					if via
-						via[reachable_object] ||= object
-					end
 					
 					queue << reachable_object
 				end

@@ -1,5 +1,9 @@
 # Releases
 
+## Unreleased
+
+  - Remove support for `Memory::Usage.of(..., via:)` and instead use `Memory::Graph.for` which collects more detailed usage until the specified depth, at which point it delgates to `Memory::Usage.of`. This should be more practical.
+
 ## v0.10.0
 
   - Add support for `Memory::Usage.of(..., via:)` for tracking reachability of objects.

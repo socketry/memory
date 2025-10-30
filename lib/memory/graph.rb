@@ -3,139 +3,215 @@
 # Released under the MIT License.
 # Copyright, 2025, by Samuel Williams.
 
-require "set"
+require_relative "usage"
+require "json"
 
 module Memory
 	# Tracks object traversal paths for memory analysis.
-	#
-	# The Graph class maintains a mapping of objects to their parent objects,
-	# allowing you to trace the reference path from any object back to its root.
-	class Graph
-		def initialize
-			@mapping = Hash.new.compare_by_identity
-		end
+	module Graph
+		IGNORE = Usage::IGNORE
 		
-		# The internal mapping of objects to their parents.
-		attr_reader :mapping
-		
-		# Add a parent-child relationship to the via mapping.
-		#
-		# @parameter child [Object] The child object.
-		# @parameter parent [Object] The parent object that references the child.
-		def []=(child, parent)
-			@mapping[child] = parent
-		end
-		
-		# Get the parent of an object.
-		#
-		# @parameter child [Object] The child object.
-		# @returns [Object | Nil] The parent object, or nil if not tracked.
-		def [](child)
-			@mapping[child]
-		end
-		
-		# Check if an object is tracked in the via mapping.
-		#
-		# @parameter object [Object] The object to check.
-		# @returns [Boolean] True if the object is tracked.
-		def key?(object)
-			@mapping.key?(object)
-		end
-		
-		# Find how a parent object references a child object.
-		#
-		# @parameter parent [Object] The parent object.
-		# @parameter child [Object] The child object to find.
-		# @returns [String | Nil] A human-readable description of the reference, or nil if not found.
-		def find_reference(parent, child)
-			# Check instance variables:
-			parent.instance_variables.each do |ivar|
-				value = parent.instance_variable_get(ivar)
-				if value.equal?(child)
-					return ivar.to_s
-				end
-			end
-			
-			# Check array elements:
-			if parent.is_a?(Array)
-				parent.each_with_index do |element, index|
-					if element.equal?(child)
-						return "[#{index}]"
-					end
-				end
-			end
-			
-			# Check hash keys and values:
-			if parent.is_a?(Hash)
-				parent.each do |key, value|
-					if value.equal?(child)
-						return "[#{key.inspect}]"
-					end
-					if key.equal?(child)
-						return "(key: #{key.inspect})"
-					end
-				end
-			end
-			
-			# Check struct members:
-			if parent.is_a?(Struct)
-				parent.each_pair do |member, value|
-					if value.equal?(child)
-						return ".#{member}"
-					end
-				end
-			end
-			
-			# Could not determine the reference:
-			return nil
-		end
-		
-		# Construct a human-readable path from an object back to a root.
-		#
-		# @parameter object [Object] The object to trace back from.
-		# @parameter root [Object | Nil] The root object to trace to. If nil, traces to any root.
-		# @returns [Array(Array(Object), Array(String))] A tuple of [object_path, reference_path].
-		def path_to(object, root = nil)
-			# Build the object path by following via backwards:
-			object_path = [object]
-			current = object
-			
-			while @mapping.key?(current)
-				parent = @mapping[current]
-				object_path << parent
-				current = parent
+		# Represents a node in the object graph with usage information.
+		class Node
+			def initialize(object, usage = Usage.new, parent = nil, reference: nil)
+				@object = object
+				@usage = usage
+				@parent = parent
+				@children = nil
 				
-				# Stop if we reached the specified root:
-				break if root && current.equal?(root)
+				@reference = reference || parent&.find_reference(object)
+				@total_usage = nil
+				@path = nil
 			end
 			
-			# Reverse to get path from root to object:
-			object_path.reverse!
+			# @attribute [Object] The object this node represents.
+			attr_accessor :object
 			
-			return object_path
+			# @attribute [Usage] The memory usage of this object (not including children).
+			attr_accessor :usage
+			
+			# @attribute [Node | Nil] The parent node (nil for root).
+			attr_accessor :parent
+			
+			# @attribute [Hash(String, Node) | Nil] Child nodes reachable from this object (hash of reference => node).
+			attr_accessor :children
+			
+			# @attribute [String | Nil] The reference to the parent object (nil for root).
+			attr_accessor :reference
+			
+			# Add a child node to this node.
+			#
+			# @parameter child [Node] The child node to add.
+			# @returns [self] Returns self for chaining.
+			def add(child)
+				@children ||= {}
+				
+				# Use the reference as the key, or a fallback if not found:
+				key = child.reference || "(#{@children.size})"
+				
+				@children[key] = child
+				
+				return self
+			end
+			
+			# Compute total usage including all children.
+			def total_usage
+				unless @total_usage 
+					@total_usage = Usage.new(@usage.size, @usage.count)
+					
+					@children&.each_value do |child|
+						child_total = child.total_usage
+						@total_usage.add!(child_total)
+					end
+				end
+				
+				return @total_usage
+			end
+			
+			# Find how this node references a child object.
+			#
+			# @parameter child [Object] The child object to find.
+			# @returns [String | Nil] A human-readable description of the reference, or nil if not found.
+			def find_reference(child)
+				# Check instance variables:
+				@object.instance_variables.each do |ivar|
+					value = @object.instance_variable_get(ivar)
+					if value.equal?(child)
+						return ivar.to_s
+					end
+				end
+				
+				# Check array elements:
+				if @object.is_a?(Array)
+					@object.each_with_index do |element, index|
+						if element.equal?(child)
+							return "[#{index}]"
+						end
+					end
+				end
+				
+				# Check hash keys and values:
+				if @object.is_a?(Hash)
+					@object.each do |key, value|
+						if value.equal?(child)
+							return "[#{key.inspect}]"
+						end
+						if key.equal?(child)
+							return "(key: #{key.inspect})"
+						end
+					end
+				end
+				
+				# Check struct members:
+				if @object.is_a?(Struct)
+					@object.each_pair do |member, value|
+						if value.equal?(child)
+							return ".#{member}"
+						end
+					end
+				end
+				
+				# Could not determine the reference:
+				return nil
+			end
+			
+			# Get the path string from root to this node (cached).
+			#
+			# @returns [String | Nil] The formatted path string, or nil if no graph available.
+			def path
+				unless @path
+					# Build object path from root to this node:
+					object_path = []
+					current = self
+					
+					while current
+						object_path.unshift(current)
+						current = current.parent
+					end
+					
+					# Format the path:
+					parts = ["#<#{object_path.first.object.class}:0x%016x>" % (object_path.first.object.object_id << 1)]
+					
+					# Append each reference in the path:
+					(1...object_path.size).each do |i|
+						parent_node = object_path[i - 1]
+						child_node = object_path[i]
+						
+						parts << (parent_node.find_reference(child_node.object) || "<??>")
+					end
+					
+					@path = parts.join
+				end
+				
+				return @path
+			end
+			
+			# Convert this node to a JSON-compatible hash.
+			#
+			# @parameter options [Hash] Options for JSON serialization.
+			# @returns [Hash] A hash representation of this node.
+			def as_json(*)
+				{
+					path: path,
+						object: {
+							class: @object.class.name,
+							object_id: @object.object_id
+						},
+						usage: @usage.as_json,
+						total_usage: total_usage.as_json,
+						children: @children&.transform_values(&:as_json)
+				}
+			end
+			
+			# Convert this node to a JSON string.
+			#
+			# @parameter options [Hash] Options for JSON serialization.
+			# @returns [String] A JSON string representation of this node.
+			def to_json(...)
+				as_json.to_json(...)
+			end
 		end
 		
-		# Format a human-readable path string.
+		# Build a graph of nodes from a root object, computing usage at each level.
 		#
-		# @parameter object [Object] The object to trace back from.
-		# @parameter root [Object | Nil] The root object to trace to. If nil, traces to any root.
-		# @returns [String] A formatted path string.
-		def path(object, root = nil)
-			object_path = path_to(object, root)
-			
-			# Start with the root object description:
-			parts = ["#<#{object_path.first.class}:0x%016x>" % (object_path.first.object_id << 1)]
-			
-			# Append each reference in the path:
-			(1...object_path.size).each do |i|
-				parent = object_path[i - 1]
-				child = object_path[i]
-				
-				parts << (find_reference(parent, child) || "<??>")
+		# @parameter root [Object] The root object to start from.
+		# @parameter depth [Integer] Maximum depth to traverse (nil for unlimited).
+		# @parameter seen [Set] Set of already seen objects (for internal use).
+		# @parameter ignore [Array] Array of types to ignore during traversal.
+		# @parameter parent [Node | Nil] The parent node (for internal use).
+		# @returns [Node] The root node with children populated.
+		def self.for(root, depth: nil, seen: Set.new.compare_by_identity, ignore: IGNORE, parent: nil)
+			if depth && depth <= 0
+				# Compute shallow usage for this object and it's children:
+				usage = Usage.of(root, seen: seen, ignore: ignore)
+				return Node.new(root, usage, parent)
 			end
 			
-			return parts.join
+			# Compute shallow usage for just this object:
+			usage = Usage.new(ObjectSpace.memsize_of(root), 1)
+			
+			# Create the node:
+			node = Node.new(root, usage, parent)
+			
+			# Mark this object as seen:
+			seen.add(root)
+			
+			# Traverse children:
+			ObjectSpace.reachable_objects_from(root)&.each do |reachable_object|
+				# Skip ignored types:
+				next if ignore.any?{|type| reachable_object.is_a?(type)}
+				
+				# Skip internal objects:
+				next if reachable_object.is_a?(ObjectSpace::InternalObjectWrapper)
+				
+				# Skip already seen objects:
+				next if seen.include?(reachable_object)
+				
+				# Recursively build child node:
+				node.add(self.for(reachable_object, depth: depth ? depth - 1 : nil, seen: seen, ignore: ignore, parent: node))
+			end
+			
+			return node
 		end
 	end
 end
-
