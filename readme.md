@@ -94,6 +94,10 @@ end
 
 Please see the [project releases](https://socketry.github.io/memory/releases/index) for all releases.
 
+### v0.11.1
+
+  - Compresed `Memory::Graph::Node` JSON representation for leaf nodes.
+
 ### v0.11.0
 
   - Remove support for `Memory::Usage.of(..., via:)` and instead use `Memory::Graph.for` which collects more detailed usage until the specified depth, at which point it delgates to `Memory::Usage.of`. This should be more practical.
@@ -131,10 +135,6 @@ Please see the [project releases](https://socketry.github.io/memory/releases/ind
 ### v0.7.1
 
   - Ensure aggregate keys are safe for serialization (and printing).
-
-### v0.7.0
-
-  - Add `Memory::Sampler#as_json` and `#to_json`.
 
 ## Contributing
 

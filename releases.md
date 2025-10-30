@@ -1,6 +1,6 @@
 # Releases
 
-## Unreleased
+## v0.11.1
 
   - Compresed `Memory::Graph::Node` JSON representation for leaf nodes.
 
