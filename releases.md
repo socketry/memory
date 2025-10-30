@@ -1,6 +1,6 @@
 # Releases
 
-## Unreleased
+## v0.11.0
 
   - Remove support for `Memory::Usage.of(..., via:)` and instead use `Memory::Graph.for` which collects more detailed usage until the specified depth, at which point it delgates to `Memory::Usage.of`. This should be more practical.
 

@@ -94,6 +94,10 @@ end
 
 Please see the [project releases](https://socketry.github.io/memory/releases/index) for all releases.
 
+### v0.11.0
+
+  - Remove support for `Memory::Usage.of(..., via:)` and instead use `Memory::Graph.for` which collects more detailed usage until the specified depth, at which point it delgates to `Memory::Usage.of`. This should be more practical.
+
 ### v0.10.0
 
   - Add support for `Memory::Usage.of(..., via:)` for tracking reachability of objects.
@@ -131,10 +135,6 @@ Please see the [project releases](https://socketry.github.io/memory/releases/ind
 ### v0.7.0
 
   - Add `Memory::Sampler#as_json` and `#to_json`.
-
-### v0.6.0
-
-  - Add agent context.
 
 ## Contributing
 
