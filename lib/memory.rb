@@ -11,6 +11,8 @@ require_relative "memory/version"
 require_relative "memory/cache"
 require_relative "memory/report"
 require_relative "memory/sampler"
+require_relative "memory/usage"
+require_relative "memory/graph"
 
 # Memory profiler for Ruby applications.
 # Provides tools to track and analyze memory allocations and retention.

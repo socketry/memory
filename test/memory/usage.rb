@@ -132,18 +132,18 @@ describe Memory::Usage do
 			)
 		end
 		
-	it "can compute usage of proc" do
-		proc = Proc.new{|x| x * 2}
-		# Proc is in default IGNORE list, so we need a custom ignore that allows Proc
-		# but still includes Module to prevent deep traversal
-		usage = subject.of(proc, ignore: [Module])
-		expect(usage).to have_attributes(
-			count: be > 1,
-			size: be > 0
-		)
-	end
-	
-	it "can compute usage of nil" do
+		it "can compute usage of proc" do
+			proc = Proc.new{|x| x * 2}
+			# Proc is in default IGNORE list, so we need a custom ignore that allows Proc
+			# but still includes Module to prevent deep traversal
+			usage = subject.of(proc, ignore: [Module])
+			expect(usage).to have_attributes(
+				count: be > 1,
+				size: be > 0
+			)
+		end
+		
+		it "can compute usage of nil" do
 			usage = subject.of(nil)
 			expect(usage).to have_attributes(
 				count: be == 0,
@@ -205,13 +205,13 @@ describe Memory::Usage do
 				
 				root = {data: [1, 2, 3]}
 				
-				# First traversal
+				# First traversal:
 				usage1 = subject.of(root, seen: seen)
-				first_count = usage1.count
+				expect(usage1.count).to be == 2
 				
-				# Second traversal with same seen set should find nothing new
+				# Second traversal with same seen set should find nothing new:
 				usage2 = subject.of(root, seen: seen)
-				expect(usage2.count).to be == 0
+				expect(usage2.count).to be == 1
 			end
 		end
 		
@@ -252,7 +252,7 @@ describe Memory::Usage do
 			end
 			
 			it "ignores Proc by default" do
-				proc = Proc.new { "test" }
+				proc = Proc.new {"test"}
 				array = [proc]
 				usage = subject.of(array)
 				
@@ -270,7 +270,7 @@ describe Memory::Usage do
 			end
 			
 			it "ignores Fiber by default" do
-				fiber = Fiber.new { "test" }
+				fiber = Fiber.new {"test"}
 				array = [fiber]
 				usage = subject.of(array)
 				
@@ -363,6 +363,209 @@ describe Memory::Usage do
 				
 				# Seen should have accumulated objects from both calls
 				expect(seen.size).to be > count1
+			end
+		end
+		
+		with "via parameter" do
+			it "does not track traversal path when via is nil" do
+				object = [Object.new]
+				usage = subject.of(object)
+				
+				# Should work normally without via tracking
+				expect(usage.count).to be == 2
+			end
+			
+			it "tracks which object each reachable object was discovered through" do
+				via = {}.compare_by_identity
+				
+				child1 = Object.new
+				child2 = Object.new
+				parent = [child1, child2]
+				
+				usage = subject.of(parent, via: via)
+				
+				# Both children should be mapped to parent
+				expect(via[child1]).to be == parent
+				expect(via[child2]).to be == parent
+			end
+			
+			it "tracks nested object relationships" do
+				via = {}.compare_by_identity
+				
+				grandchild = Object.new
+				child = [grandchild]
+				parent = [child]
+				
+				usage = subject.of(parent, via: via)
+				
+				# Verify the chain: parent -> child -> grandchild
+				expect(via[child]).to be == parent
+				expect(via[grandchild]).to be == child
+			end
+			
+			it "tracks first parent for shared objects" do
+				via = {}.compare_by_identity
+				
+				shared = Object.new
+				array1 = [shared]
+				array2 = [shared]
+				root = [array1, array2]
+				
+				usage = subject.of(root, via: via)
+				
+				# shared should be mapped to whichever array discovered it first
+				parent_of_shared = via[shared]
+				expect(parent_of_shared).to be(:==, array1).or(be(:==, array2))
+				
+				# Both arrays should be mapped to root
+				expect(via[array1]).to be == root
+				expect(via[array2]).to be == root
+			end
+			
+			it "handles circular references in via tracking" do
+				via = {}.compare_by_identity
+				
+				array = []
+				array << array # Circular reference
+				
+				usage = subject.of(array, via: via)
+				
+				# array is the root, so it shouldn't be in via
+				expect(via).not.to be(:include?, array)
+			end
+			
+			it "does not include root object in via map" do
+				via = {}.compare_by_identity
+				
+				root = [Object.new, Object.new]
+				usage = subject.of(root, via: via)
+				
+				# Root should not be in via (it's not reachable from anything)
+				expect(via).not.to be(:include?, root)
+				
+				# But its children should be
+				expect(via.size).to be == 2
+			end
+			
+			it "respects seen parameter and does not update via for already-seen objects" do
+				seen = Set.new.compare_by_identity
+				via = {}.compare_by_identity
+				
+				shared = Object.new
+				array1 = [shared]
+				
+				# First traversal adds shared to seen
+				usage1 = subject.of(array1, seen: seen, via: via)
+				first_parent = via[shared]
+				
+				# Second traversal with different parent but same seen set
+				array2 = [shared]
+				usage2 = subject.of(array2, seen: seen, via: via)
+				
+				# via[shared] should still point to first parent
+				expect(via[shared]).to be == first_parent
+			end
+			
+			it "respects ignore parameter and does not track ignored objects" do
+				via = {}.compare_by_identity
+				custom_ignore = [Module, String]
+				
+				string = "test"
+				object = Object.new
+				array = [string, object]
+				
+				usage = subject.of(array, via: via, ignore: custom_ignore)
+				
+				# String should not be in via (it's ignored)
+				expect(via).not.to be(:include?, string)
+				
+				# But object should be tracked
+				expect(via[object]).to be == array
+			end
+			
+			it "allows tracing path from object back to root" do
+				via = {}.compare_by_identity
+				
+				level3 = Object.new
+				level2 = [level3]
+				level1 = [level2]
+				root = [level1]
+				
+				usage = subject.of(root, via: via)
+				
+				# Trace from level3 back to root
+				current = level3
+				path = [current]
+				
+				while via.key?(current)
+					current = via[current]
+					path << current
+				end
+				
+				# Path should be: level3 -> level2 -> level1 -> root
+				expect(path).to be == [level3, level2, level1, root]
+			end
+			
+			it "works with hash objects" do
+				via = {}.compare_by_identity
+				
+				value1 = Object.new
+				value2 = Object.new
+				hash = {key1: value1, key2: value2}
+				
+				usage = subject.of(hash, via: via)
+				
+				# Values should be reachable from hash
+				expect(via[value1]).to be == hash
+				expect(via[value2]).to be == hash
+			end
+			
+			it "works with objects having instance variables" do
+				via = {}.compare_by_identity
+				
+				ivar_value = Object.new
+				root = Object.new
+				root.instance_variable_set(:@data, ivar_value)
+				
+				usage = subject.of(root, via: via)
+				
+				# Instance variable value should be reachable from root
+				expect(via[ivar_value]).to be == root
+			end
+			
+			it "preserves via across multiple traversals with shared seen" do
+				seen = Set.new.compare_by_identity
+				via = {}.compare_by_identity
+				
+				obj1 = Object.new
+				array1 = [obj1]
+				usage1 = subject.of(array1, seen: seen, via: via)
+				
+				obj2 = Object.new
+				array2 = [obj2]
+				usage2 = subject.of(array2, seen: seen, via: via)
+				
+				# via should track both relationships
+				expect(via[obj1]).to be == array1
+				expect(via[obj2]).to be == array2
+				expect(via.size).to be == 2
+			end
+			
+			it "uses compare_by_identity for via lookups" do
+				via = {}.compare_by_identity
+				
+				# Create two different arrays with same content
+				child = [1, 2, 3]
+				root = [child]
+				
+				usage = subject.of(root, via: via)
+				
+				# Should be able to look up by object identity
+				expect(via[child]).to be == root
+				
+				# Different array with same content should not be found
+				different_child = [1, 2, 3]
+				expect(via).not.to be(:include?, different_child)
 			end
 		end
 	end

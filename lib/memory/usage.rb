@@ -57,33 +57,42 @@ module Memory
 		]
 		
 		# Compute the usage of an object and all reachable objects from it.
+		#
+		# The root is always visited even if it is in `seen`.
+		#
 		# @parameter root [Object] The root object to start traversal from.
+		# @parameter seen [Hash(Object, Integer)] The seen objects (should be compare_by_identity).
+		# @parameter via [Hash(Object, Object) | Nil] The traversal path. The key object was seen via the value object.
 		# @returns [Usage] The usage of the object and all reachable objects from it.
-		def self.of(root, seen: Set.new.compare_by_identity, ignore: IGNORE)
+		def self.of(root, seen: Set.new.compare_by_identity, ignore: IGNORE, via: nil)
 			count = 0
 			size = 0
 			
 			queue = [root]
-			while queue.any?
-				object = queue.shift
-				
-				# Skip ignored types:
-				next if ignore.any?{|type| object.is_a?(type)}
-				
-				# Skip internal objects - they don't behave correctly when added to `seen` and create unbounded recursion:
-				next if object.is_a?(ObjectSpace::InternalObjectWrapper)
-				
-				# Skip objects we have already seen:
-				next if seen.include?(object)
-				
-				# Add the object to the seen set and update the count and size:
+			while object = queue.shift
+				# Add the object to the seen set:
 				seen.add(object)
+				
+				# Update the count and size:
 				count += 1
 				size += ObjectSpace.memsize_of(object)
 				
 				# Add the object's reachable objects to the queue:
-				if reachable_objects = ObjectSpace.reachable_objects_from(object)
-					queue.concat(reachable_objects)
+				ObjectSpace.reachable_objects_from(object)&.each do |reachable_object|
+					# Skip ignored types:
+					next if ignore.any?{|type| reachable_object.is_a?(type)}
+					
+					# Skip internal objects - they don't behave correctly when added to `seen` and create unbounded recursion:
+					next if reachable_object.is_a?(ObjectSpace::InternalObjectWrapper)
+					
+					# Skip objects we have already seen:
+					next if seen.include?(reachable_object)
+					
+					if via
+						via[reachable_object] ||= object
+					end
+					
+					queue << reachable_object
 				end
 			end
 			
