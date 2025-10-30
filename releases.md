@@ -1,6 +1,6 @@
 # Releases
 
-## Unreleased
+## v0.10.0
 
   - Add support for `Memory::Usage.of(..., via:)` for tracking reachability of objects.
   - Introduce `Memory::Graph` for computing paths between parent/child objects.

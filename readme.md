@@ -94,6 +94,11 @@ end
 
 Please see the [project releases](https://socketry.github.io/memory/releases/index) for all releases.
 
+### v0.10.0
+
+  - Add support for `Memory::Usage.of(..., via:)` for tracking reachability of objects.
+  - Introduce `Memory::Graph` for computing paths between parent/child objects.
+
 ### v0.9.0
 
   - Explicit `ignore:` and `seen:` parameters for `Memory::Usage.of` to allow customization of ignored types and tracking of seen objects.
