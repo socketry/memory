@@ -64,6 +64,16 @@ module Memory
 			# The string report can still list unique strings longer than 200 characters
 			#   separately because the object_id of the shortened string will be different
 			@string_cache[obj] ||= String.new << obj[0, 64]
+		rescue RuntimeError => e
+			# It is possible for the String to be temporarily locked from another Fiber
+			# which raises an error when we try to use it as a hash key.
+			# ie: Socket#read locks a buffer string while reading data into it.
+			# In this case we dup the string to get an unlocked copy.
+			if e.message == "can't modify string; temporarily locked"
+				@string_cache[obj.dup] ||= String.new << obj[0, 64]
+			else
+				raise
+			end
 		end
 	end
 end
