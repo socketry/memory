@@ -39,6 +39,26 @@ describe Memory::Sampler do
 		expect(allocation.retained).to be_truthy
 	end
 	
+	it "safely captures locked string objects" do
+		fiber = Fiber.new do |string|
+			IO::Buffer.for(string) do
+				# string is now locked for the duration of this block.
+				sleep(0.1)
+				Fiber.yield
+			end
+		end
+		
+		memory = Memory::Sampler.new
+		memory.start
+		
+		# Lock the string
+		key = String.new("foo")
+		fiber.resume(key)
+		
+		memory.stop
+		memory.report # buffer string is locked while reading ObjectSpace#each_object
+	end
+	
 	with "#as_json" do
 		it "returns allocation count" do
 			x = nil
