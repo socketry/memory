@@ -7,7 +7,7 @@ Gem::Specification.new do |spec|
 	spec.version = Memory::VERSION
 	
 	spec.summary = "Memory profiling routines for Ruby 2.3+"
-	spec.authors = ["Sam Saffron", "Dave Gynn", "Samuel Williams", "Nick LaMuro", "Jonas Peschla", "Ashwin Maroli", "Søren Skovsbøll", "Richard Schneeman", "Anton Davydov", "Benoit Tigeot", "Jean Boussier", "Vincent Woo", "Andrew Grimm", "Boris Staal", "Danny Ben Shitrit", "Espartaco Palma", "Florian Schwab", "Hamdi Akoğuz", "Jaiden Mispy", "John Bachir", "Luís Ferreira", "Mike Subelsky", "Olle Jonsson", "Vasily Kolesnikov", "William Tabi"]
+	spec.authors = ["Sam Saffron", "Dave Gynn", "Samuel Williams", "Nick LaMuro", "Jonas Peschla", "Ashwin Maroli", "Søren Skovsbøll", "Richard Schneeman", "Anton Davydov", "Benoit Tigeot", "Jean Boussier", "Vincent Woo", "Andrew Grimm", "Boris Staal", "Danny Ben Shitrit", "Espartaco Palma", "Florian Schwab", "Hamdi Akoğuz", "Jaiden Mispy", "John Bachir", "Luís Ferreira", "Mike Subelsky", "Olle Jonsson", "Vasily Kolesnikov", "William Tabi", "Michael Go"]
 	spec.license = "MIT"
 	
 	spec.cert_chain  = ["release.cert"]
