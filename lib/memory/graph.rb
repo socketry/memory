@@ -159,12 +159,12 @@ module Memory
 						},
 						usage: @usage.as_json,
 				}
-
+				
 				if @children&.any?
 					json[:total_usage] = total_usage.as_json
 					json[:children] = @children.transform_values(&:as_json)
 				end
-
+				
 				return json
 			end
 			

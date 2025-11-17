@@ -61,7 +61,7 @@ describe Memory::Report do
 	
 	with "invalid UTF-8 strings" do
 		let(:value_aggregate) do
-			Memory::ValueAggregate.new("Strings By Value") {|allocation| allocation.class_name}
+			Memory::ValueAggregate.new("Strings By Value"){|allocation| allocation.class_name}
 		end
 		
 		it "can safely convert to JSON" do
@@ -153,7 +153,7 @@ describe Memory::Report do
 			
 			Memory.capture(report) do
 				# Allocate enough to get KiB
-				1000.times {"x" * 100}
+				1000.times{"x" * 100}
 			end
 			
 			report.print(io)

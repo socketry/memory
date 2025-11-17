@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # Released under the MIT License.
-# Copyright, 2022-2025, by Samuel Williams.
+# Copyright, 2025, by Samuel Williams.
 
 require "memory/usage"
 require "json"
@@ -280,7 +280,7 @@ describe Memory::Usage do
 			end
 			
 			it "ignores Proc by default" do
-				proc = Proc.new {"test"}
+				proc = Proc.new{"test"}
 				array = [proc]
 				usage = subject.of(array)
 				
@@ -298,7 +298,7 @@ describe Memory::Usage do
 			end
 			
 			it "ignores Fiber by default" do
-				fiber = Fiber.new {"test"}
+				fiber = Fiber.new{"test"}
 				array = [fiber]
 				usage = subject.of(array)
 				

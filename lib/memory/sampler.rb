@@ -32,8 +32,8 @@ module Memory
 			@cache = cache
 			
 			self.register_type(0x01, Allocation,
-				packer: ->(instance){self.pack(instance.pack)},
-				unpacker: ->(data){Allocation.unpack(@cache, self.unpack(data))},
+				packer: ->(instance) {self.pack(instance.pack)},
+				unpacker: ->(data) {Allocation.unpack(@cache, self.unpack(data))},
 			)
 			
 			self.register_type(0x02, Symbol)

@@ -197,7 +197,7 @@ report = Memory::Report.new([
 sampler = Memory::Sampler.new
 sampler.run do
 	# Your code here
-	10000.times {"test string"}
+	10000.times{"test string"}
 end
 
 # Add samples to the custom report:
@@ -221,7 +221,7 @@ Reports can be exported as JSON for integration with other tools:
 ``` ruby
 report = Memory.report do
 	# Your code
-	data = Array.new(1000) {{value: rand(1000)}}
+	data = Array.new(1000){{value: rand(1000)}}
 end
 
 # Export as JSON:

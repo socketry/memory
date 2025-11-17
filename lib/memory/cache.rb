@@ -17,7 +17,7 @@ module Memory
 		# Initialize a new cache with empty lookup tables.
 		def initialize
 			@gem_guess_cache = Hash.new
-			@location_cache = Hash.new {|h, k| h[k] = Hash.new.compare_by_identity}
+			@location_cache = Hash.new{|h, k| h[k] = Hash.new.compare_by_identity}
 			@class_name_cache = Hash.new.compare_by_identity
 			@string_cache = Hash.new
 		end
