@@ -56,20 +56,18 @@ module Memory
 		end
 		
 		# Look up and cache a string value.
+		#
+		# This maps the original string to a shortened representation.
+		#
 		# Strings are truncated to 64 characters to reduce memory usage.
 		# @parameter obj [String] The string object to cache.
 		# @returns [String] A cached copy of the string (truncated to 64 characters).
 		def lookup_string(obj)
-			# This string is shortened to 200 characters which is what the string report shows
-			# The string report can still list unique strings longer than 200 characters
-			#   separately because the object_id of the shortened string will be different
+			# This string is shortened to 64 characters which is what the string report shows. The string report can still list unique strings longer than 64 characters separately because the object_id of the shortened string will be different.
 			@string_cache[obj] ||= String.new << obj[0, 64]
-		rescue RuntimeError => e
-			# It is possible for the String to be temporarily locked from another Fiber
-			# which raises an error when we try to use it as a hash key.
-			# ie: Socket#read locks a buffer string while reading data into it.
-			# In this case we dup the string to get an unlocked copy.
-			if e.message == "can't modify string; temporarily locked"
+		rescue RuntimeError => error
+			# It is possible for the String to be temporarily locked from another Fiber which raises an error when we try to use it as a hash key. i.e: `Socket#read` locks a buffer string while reading data into it. In this case we `#dup`` the string to get an unlocked copy.
+			if error.message == "can't modify string; temporarily locked"
 				@string_cache[obj.dup] ||= String.new << obj[0, 64]
 			else
 				raise
