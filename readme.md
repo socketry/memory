@@ -96,7 +96,7 @@ Please see the [project releases](https://socketry.github.io/memory/releases/ind
 
 ### v0.11.1
 
-  - Compresed `Memory::Graph::Node` JSON representation for leaf nodes.
+  - Compressed `Memory::Graph::Node` JSON representation for leaf nodes.
 
 ### v0.11.0
 
