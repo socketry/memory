@@ -37,4 +37,12 @@ module Memory
 	def self.report(&block)
 		self.capture(&block)
 	end
+	
+	# @namespace Used by the `memory-profiler` gem.
+	module Profiler
+	end
+	
+	# @namespace Used by the `memory-leaks` gem.
+	module Leaks
+	end
 end
