@@ -290,9 +290,6 @@ module Memory
 				class_name = @cache.lookup_class_name(klass)
 				value = (klass == String) ? @cache.lookup_string(object) : nil
 				
-				# compensate for API bug
-				memsize = rvalue_size if memsize > 100_000_000_000
-				
 				allocation = Allocation.new(@cache, class_name, file, line, memsize, value, false)
 				
 				@allocated << allocation
