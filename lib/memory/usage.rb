@@ -9,7 +9,13 @@ require "set"
 require "objspace"
 
 module Memory
+	# Tracks memory usage statistics including size and object count.
+	#
+	# Can be used to measure allocations or compute usage of object graphs.
 	class Usage
+		# Initialize a new usage tracker.
+		# @parameter size [Integer] The total size in bytes.
+		# @parameter count [Integer] The total count of objects.
 		def initialize(size = 0, count = 0)
 			@size = size
 			@count = count
@@ -103,17 +109,24 @@ module Memory
 			return new(size, count)
 		end
 		
+		# Convert this usage to a JSON-compatible hash.
+		# @parameter options [Hash | Nil] Optional JSON serialization options.
+		# @returns [Hash] Hash with `:size` and `:count` keys.
 		def as_json(...)
 			{
 				size: @size,
-				count: @count
+					count: @count
 			}
 		end
 		
+		# Convert this usage to a JSON string.
+		# @returns [String] JSON representation of this usage.
 		def to_json(...)
 			as_json.to_json(...)
 		end
 		
+		# Generate a human-readable string representation.
+		# @returns [String] Formatted string showing size and allocation count.
 		def to_s
 			"(#{Memory.formatted_bytes(@size)} in #{@count} allocations)"
 		end

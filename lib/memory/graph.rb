@@ -13,6 +13,11 @@ module Memory
 		
 		# Represents a node in the object graph with usage information.
 		class Node
+			# Initialize a new node in the object graph.
+			# @parameter object [Object] The object this node represents.
+			# @parameter usage [Usage] The memory usage of this object.
+			# @parameter parent [Node | Nil] The parent node in the traversal tree.
+			# @parameter reference [Symbol | Nil] The reference type from parent to this object.
 			def initialize(object, usage = Usage.new, parent = nil, reference: nil)
 				@object = object
 				@usage = usage
@@ -153,11 +158,11 @@ module Memory
 			def as_json(*)
 				json = {
 					path: path,
-						object: {
-							class: @object.class.name,
-							object_id: @object.object_id
-						},
-						usage: @usage.as_json,
+								object: {
+									class: @object.class.name,
+									object_id: @object.object_id
+								},
+								usage: @usage.as_json,
 				}
 				
 				if @children&.any?
